@@ -1,2 +1,3 @@
-# dtrpg-api.rs
-An API library for DriveThru RPG in Rust
+# dtrpg-client.rs
+
+A client library for DriveThru RPG API in Rust
