@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  ci:
+    name: Build, test, and package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Get Rust version
+        id: get_rust_version
+        run: |
+              echo "rust_version=$(cat .rust-version)" >> $GITHUB_OUTPUT
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.get_rust_version.outputs.rust_version }}
+          components: clippy, rustfmt
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build (release)
+        run: cargo build --release
+
+      - name: Test
+        run: cargo test
+
+      - name: Package
+        run: cargo package --no-verify
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: crate-${{ github.sha }}
+          path: target/package/*.crate
+          retention-days: 30
