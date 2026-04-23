@@ -1,3 +1,33 @@
+//! # DriveThruRPG SDK
+//!
+//! A Rust SDK for interacting with the [DriveThruRPG API](https://api.drivethrurpg.com).
+//!
+//! ## Overview
+//!
+//! This crate provides the foundational types and structures for authenticating with and
+//! configuring access to the DriveThruRPG API. It covers:
+//!
+//! - **Configuration** — supplying your application key and API base URL via [`Config`].
+//! - **Authentication** — representing token responses, active sessions, and session state
+//!   via [`AuthTokenResponse`], [`AuthSession`], and [`AuthState`].
+//! - **Error handling** — structured errors for SDK-level and session-level failures via
+//!   [`SdkError`] and [`AuthSessionError`].
+//! - **SDK entry point** — [`DriveThruRpgSdk`] ties configuration and session lifecycle together.
+//!
+//! ## Quick Start
+//!
+//! ```rust
+//! use dtrpg_sdk::{Config, DriveThruRpgSdk, AuthTokenResponse};
+//!
+//! let mut sdk = DriveThruRpgSdk::with_config(Config::new("my-app-key"));
+//!
+//! // After receiving an auth response from the API:
+//! let response = AuthTokenResponse::new("jwt-token", "refresh-token", 1_800_000_000);
+//! let session = sdk.apply_auth_response(response).unwrap();
+//!
+//! assert_eq!(session.token(), "jwt-token");
+//! ```
+
 pub mod auth;
 pub mod config;
 pub mod error;
