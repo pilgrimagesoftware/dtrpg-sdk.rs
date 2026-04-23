@@ -62,13 +62,6 @@ jobs:
           command: test
           args: --verbose --release --target ${{ matrix.target }}
 
-      - name: Package
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: package
-          args: --verbose --no-verify --allow-dirty
-
       - name: Bump version and push tag
         id: bump_version
         uses: anothrNick/github-tag-action@v1
@@ -85,6 +78,13 @@ jobs:
               git add Cargo.toml
               git commit -m "Update Cargo.toml on ${{ github.ref_name }} with version: ${{ steps.bump_version.outputs.new_tag }} [skip ci]"
               git push origin
+
+      - name: Package
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: package
+          args: --verbose --no-verify --allow-dirty
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
