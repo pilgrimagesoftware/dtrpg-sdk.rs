@@ -35,6 +35,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          show-progress: true
 
       - name: Get Rust version
         id: get_rust_version
@@ -72,14 +76,6 @@ jobs:
           WITH_V: false
           DEFAULT_BUMP: patch
 
-      - name: Generate documentation
-        run: cargo doc --no-deps --verbose
-
-      - name: Add redirect index
-        run: |
-          echo '<meta http-equiv="refresh" content="0; url=dtrpg_sdk/index.html">' \
-            > target/doc/index.html
-
       - name: Commit and push
         run: |
               git config --global user.email "ci@pilgrimagesoftware.com"
@@ -88,6 +84,15 @@ jobs:
               git add Cargo.toml
               git commit -m "Update Cargo.toml on ${{ github.ref_name }} with version: ${{ steps.bump_version.outputs.new_tag }} [skip ci]"
               git push origin
+
+      - name: Generate documentation
+        run: cargo doc --no-deps --verbose
+
+      - name: Add redirect index
+        run: |
+          echo '<meta http-equiv="refresh" content="0; url=dtrpg_sdk/index.html">' \
+            > target/doc/index.html
+
 
       - name: Package
         uses: actions-rs/cargo@v1
