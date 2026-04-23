@@ -64,7 +64,7 @@ jobs:
         with:
           use-cross: true
           command: package
-          args: --verbose --no-verify
+          args: --verbose --no-verify --allow-dirty
 
       - name: Bump version and push tag
         id: bump_version
