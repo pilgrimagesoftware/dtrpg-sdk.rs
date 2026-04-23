@@ -1,6 +1,22 @@
 [package]
-name = "dtrpg-sdk-rs"
+name = "dtrpg-sdk"
+description = "A Rust SDK for DTRPG API"
 version = "0.0.1"
 edition = "2024"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/pilgrimagesoftware/dtrpg-sdk.rs"
+homepage = "https://github.com/pilgrimagesoftware/dtrpg-sdk.rs"
+keywords = ["dtrpg", "api", "sdk"]
+categories = ["api-bindings", "rust"]
+authors = ["Paul Schifferer <paul@schifferers.net>"]
+exclude = [
+    "*.orig",
+    ".github/*",
+    ".gitignore",
+    ".rust-version",
+    ".editorconfig",
+    ".cargo_vcs_info.json",
+]
 
 [dependencies]
