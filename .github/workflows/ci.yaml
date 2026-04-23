@@ -82,7 +82,7 @@ jobs:
               git config --global user.name "Pilgrimage Software CI"
               sed -i 's/^version = ".*"$/version = "'${{ steps.bump_version.outputs.new_tag }}'"/' Cargo.toml
               git add Cargo.toml
-              git commit -m "Update Cargo.toml on ${{ github.ref_name }} with version: ${{ steps.bump_version.outputs.new_tag }} [skip ci]"
+              git commit -m "chore: update Cargo.toml on ${{ github.ref_name }} with version: ${{ steps.bump_version.outputs.new_tag }} [skip ci]"
               git push origin
 
       - name: Generate documentation
@@ -92,7 +92,6 @@ jobs:
         run: |
           echo '<meta http-equiv="refresh" content="0; url=dtrpg_sdk/index.html">' \
             > target/doc/index.html
-
 
       - name: Package
         uses: actions-rs/cargo@v1
