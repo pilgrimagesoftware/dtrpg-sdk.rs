@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "dtrpg-sdk-rs"
-version = "0.1.0"
+name = "dtrpg-sdk"
+version = "0.0.1"
