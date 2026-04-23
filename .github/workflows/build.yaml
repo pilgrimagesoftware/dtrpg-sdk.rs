@@ -1,4 +1,4 @@
-name: CI
+name: Build and Release
 
 on:
   push:
@@ -20,7 +20,7 @@ permissions:
   id-token: write
 
 jobs:
-  ci:
+  build:
     name: Build/test on ${{ matrix.name }}
 
     runs-on: ${{ matrix.os }}
@@ -130,7 +130,7 @@ jobs:
 
   deploy-docs:
     name: Deploy documentation to GitHub Pages
-    needs: ci
+    needs: build
     # if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     environment:
