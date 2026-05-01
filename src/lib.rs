@@ -31,11 +31,13 @@
 pub mod auth;
 pub mod config;
 pub mod error;
+pub mod openapi;
 pub mod sdk;
 
 pub use auth::{AuthSession, AuthState, AuthTokenResponse, SessionTransition};
 pub use config::Config;
 pub use error::{AuthSessionError, SdkError};
+pub use openapi::{OpenApiOperation, OPERATIONS};
 pub use sdk::DriveThruRpgSdk;
 
 #[cfg(test)]
@@ -86,5 +88,22 @@ mod tests {
             sdk.require_session().unwrap_err(),
             SdkError::Unauthenticated
         );
+    }
+
+    #[test]
+    fn rust_sdk_generates_api_metadata_from_openapi_spec() {
+        assert_eq!(
+            crate::openapi::DEFAULT_SERVER_URL,
+            "https://api.drivethrurpg.com/api"
+        );
+        assert!(crate::openapi::OPENAPI_SPEC_BYTES > 0);
+        assert!(crate::openapi::OPERATIONS.contains(&crate::OpenApiOperation {
+            method: "POST",
+            path: "/{DTRPG_API_VERSION}/auth_key",
+        }));
+        assert!(crate::openapi::OPERATIONS.contains(&crate::OpenApiOperation {
+            method: "GET",
+            path: "/{DTRPG_API_VERSION}/order_products",
+        }));
     }
 }

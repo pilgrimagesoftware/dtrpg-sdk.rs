@@ -18,5 +18,6 @@ exclude = [
     ".editorconfig",
     ".cargo_vcs_info.json",
 ]
+build = "build.rs"
 
 [dependencies]

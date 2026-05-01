@@ -16,3 +16,10 @@ The Rust SDK MUST expose configuration in a form that fits Rust conventions whil
 #### Scenario: Configuring a custom API endpoint
 - **WHEN** a caller provides a supported custom base URL or application key through the Rust SDK configuration surface
 - **THEN** the SDK applies that configuration using the documented Rust-oriented configuration model
+
+### Requirement: Rust SDK API metadata must be generated from OpenAPI
+The Rust SDK MUST generate API metadata from `API/openapi.yaml` at build time so the crate remains tied to the same API contract used by other SDKs.
+
+#### Scenario: Building the Rust SDK
+- **WHEN** Cargo builds the Rust SDK crate
+- **THEN** the build script reads `API/openapi.yaml` and exposes generated OpenAPI operation metadata from the crate
