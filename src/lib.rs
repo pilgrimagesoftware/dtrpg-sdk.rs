@@ -4,15 +4,21 @@
 //!
 //! ## Overview
 //!
-//! This crate provides the foundational types and structures for authenticating with and
-//! configuring access to the DriveThruRPG API. It covers:
+//! This crate provides types and structures for authenticating with, configuring, and
+//! making requests to the DriveThruRPG API. It covers:
 //!
-//! - **Configuration** — supplying your application key and API base URL via [`Config`].
+//! - **Configuration** — supplying your application key, API base URL, and API version
+//!   via [`Config`].
 //! - **Authentication** — representing token responses, active sessions, and session state
 //!   via [`AuthTokenResponse`], [`AuthSession`], and [`AuthState`].
-//! - **Error handling** — structured errors for SDK-level and session-level failures via
-//!   [`SdkError`] and [`AuthSessionError`].
-//! - **SDK entry point** — [`DriveThruRpgSdk`] ties configuration and session lifecycle together.
+//! - **Error handling** — structured errors for SDK-level, session-level, and HTTP failures
+//!   via [`SdkError`], [`AuthSessionError`], and [`ClientError`].
+//! - **SDK entry point** — [`DriveThruRpgSdk`] ties configuration and session lifecycle
+//!   together and vends a [`LibraryClient`] once authenticated.
+//! - **Library access** — [`LibraryClient`] provides an async HTTP client for all library
+//!   endpoints (ordered products, product lists, download preparation).
+//! - **Library types** — Rust model types for every API-defined library schema, such as
+//!   [`OrderProductItem`], [`ProductListItem`], and their supporting structures.
 //!
 //! ## Quick Start
 //!
@@ -24,19 +30,32 @@
 //! // After receiving an auth response from the API:
 //! let response = AuthTokenResponse::new("jwt-token", "refresh-token", 1_800_000_000);
 //! let session = sdk.apply_auth_response(response).unwrap();
-//!
 //! assert_eq!(session.token(), "jwt-token");
+//!
+//! // Create an authenticated library client:
+//! let client = sdk.library_client().unwrap();
+//! // client.list_order_products(Default::default()).await ...
 //! ```
 
 pub mod auth;
+pub mod client;
 pub mod config;
 pub mod error;
+pub mod library;
 pub mod openapi;
 pub mod sdk;
 
 pub use auth::{AuthSession, AuthState, AuthTokenResponse, SessionTransition};
+pub use client::{ClientError, LibraryClient};
 pub use config::Config;
 pub use error::{AuthSessionError, SdkError};
+pub use library::{
+    FileChecksum, LibraryItemsParams, OrderProductAttribute, OrderProductAttributes,
+    OrderProductFile, OrderProductFilter, OrderProductHistoryEntry, OrderProductItem,
+    OrderProductItemResponse, OrderProductListResponse, PageParams, PaginationLinks,
+    PaginationMeta, ProductListAttributes, ProductListCollectionResponse, ProductListItem,
+    ProductListItemsResponse, PublisherAttributes, PublisherItem,
+};
 pub use openapi::{OpenApiOperation, OPERATIONS};
 pub use sdk::DriveThruRpgSdk;
 
