@@ -1,143 +1,138 @@
 name: Build and Release
 
 on:
-  push:
-    branches:
-      - master
-      - develop
-    paths:
-      - "src/**/*.rs"
-      - .rust-version
-      - Cargo.toml
-  workflow_dispatch:
+    push:
+        branches:
+            - master
+            - develop
+        paths:
+            - "src/**/*.rs"
+            - .rust-version
+            - Cargo.toml
+    workflow_dispatch:
 
 env:
-  CARGO_TERM_COLOR: always
+    CARGO_TERM_COLOR: always
 
 permissions:
-  contents: write
-  pages: write
-  id-token: write
+    contents: write
+    pages: write
+    id-token: write
 
 jobs:
-  build:
-    name: Build/test on ${{ matrix.name }}
+    build:
+        name: Build/test on ${{ matrix.name }}
 
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Linux
-            os: ubuntu-latest
-            target: x86_64-unknown-linux-musl
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - name: Linux
+                      os: ubuntu-latest
+                      target: x86_64-unknown-linux-musl
+                    - name: macOS
+                      os: macos-latest
+                      target: x86_64-apple-darwin
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-          show-progress: true
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+                  fetch-tags: true
+                  show-progress: true
 
-      - name: Get Rust version
-        id: get_rust_version
-        run: |
-              echo "rust_version=$(cat .rust-version)" >> $GITHUB_OUTPUT
+            - name: Set up Rust toolchain
+              uses: dtolnay/rust-toolchain@stable
 
-      - name: Set up Rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ steps.get_rust_version.outputs.rust_version }}
-          components: clippy, rustfmt
+            - name: Cache dependencies
+              uses: Swatinem/rust-cache@v2
 
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v2
+            - name: Build (release)
+              uses: actions-rs/cargo@v1
+              with:
+                  use-cross: true
+                  command: build
+                  args: --verbose --release --target ${{ matrix.target }}
 
-      - name: Build (release)
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: build
-          args: --verbose --release --target ${{ matrix.target }}
+            - name: Test
+              uses: actions-rs/cargo@v1
+              with:
+                  use-cross: true
+                  command: test
+                  args: --verbose --release --target ${{ matrix.target }}
 
-      - name: Test
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: test
-          args: --verbose --release --target ${{ matrix.target }}
+            - name: Bump version and push tag
+              id: bump_version
+              uses: anothrNick/github-tag-action@v1
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  WITH_V: false
+                  DEFAULT_BUMP: patch
 
-      - name: Bump version and push tag
-        id: bump_version
-        uses: anothrNick/github-tag-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WITH_V: false
-          DEFAULT_BUMP: patch
+            - name: Commit and push
+              run: |
+                  git config --global user.email "ci@pilgrimagesoftware.com"
+                  git config --global user.name "Pilgrimage Software CI"
+                  sed -i 's/^version = ".*"$/version = "'${{ steps.bump_version.outputs.new_tag }}'"/' Cargo.toml
+                  git add Cargo.toml
+                  git commit -m "chore: update Cargo.toml on ${{ github.ref_name }} with version: ${{ steps.bump_version.outputs.new_tag }} [skip ci]"
+                  git push origin
 
-      - name: Commit and push
-        run: |
-              git config --global user.email "ci@pilgrimagesoftware.com"
-              git config --global user.name "Pilgrimage Software CI"
-              sed -i 's/^version = ".*"$/version = "'${{ steps.bump_version.outputs.new_tag }}'"/' Cargo.toml
-              git add Cargo.toml
-              git commit -m "chore: update Cargo.toml on ${{ github.ref_name }} with version: ${{ steps.bump_version.outputs.new_tag }} [skip ci]"
-              git push origin
+            - name: Generate documentation
+              run: cargo doc --no-deps --verbose
 
-      - name: Generate documentation
-        run: cargo doc --no-deps --verbose
+            - name: Add redirect index
+              run: |
+                  echo '<meta http-equiv="refresh" content="0; url=dtrpg_sdk/index.html">' \
+                    > target/doc/index.html
 
-      - name: Add redirect index
-        run: |
-          echo '<meta http-equiv="refresh" content="0; url=dtrpg_sdk/index.html">' \
-            > target/doc/index.html
+            - name: Package
+              uses: actions-rs/cargo@v1
+              with:
+                  use-cross: true
+                  command: package
+                  args: --verbose --no-verify --allow-dirty
 
-      - name: Package
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: package
-          args: --verbose --no-verify --allow-dirty
+            - name: Upload package artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: crate-${{ github.sha }}
+                  path: target/package/*.crate
+                  retention-days: 30
 
-      - name: Upload package artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: crate-${{ github.sha }}
-          path: target/package/*.crate
-          retention-days: 30
+            - name: Upload documentation artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: docs-${{ github.sha }}
+                  path: target/doc/
+                  retention-days: 30
 
-      - name: Upload documentation artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: docs-${{ github.sha }}
-          path: target/doc/
-          retention-days: 30
+            - name: Upload Pages artifact
+              # if: github.ref == 'refs/heads/master'
+              uses: actions/upload-pages-artifact@v3
+              with:
+                  path: target/doc/
 
-      - name: Upload Pages artifact
+            # - name: Run release-plz
+            #   uses: release-plz/action@v0.5.17
+            #   with:
+            #     command: release
+            #   env:
+            #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            #     CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_API_KEY }}
+
+    deploy-docs:
+        name: Deploy documentation to GitHub Pages
+        needs: build
         # if: github.ref == 'refs/heads/master'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: target/doc/
+        runs-on: ubuntu-latest
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
 
-      # - name: Run release-plz
-      #   uses: release-plz/action@v0.5.17
-      #   with:
-      #     command: release
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_API_KEY }}
-
-  deploy-docs:
-    name: Deploy documentation to GitHub Pages
-    needs: build
-    # if: github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+        steps:
+            - name: Deploy to GitHub Pages
+              id: deployment
+              uses: actions/deploy-pages@v4
