@@ -42,6 +42,7 @@ jobs:
                   fetch-depth: 0
                   fetch-tags: true
                   show-progress: true
+                  submodules: recursive
 
             - name: Set up Rust toolchain
               uses: dtolnay/rust-toolchain@stable
