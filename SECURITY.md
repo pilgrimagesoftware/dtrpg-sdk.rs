@@ -8,4 +8,4 @@
 
 ## Reporting a Vulnerability
 
-To report a vulnerability, please open an [issue here](https://github.com/sweetrpg/lootparcels-foundryvtt/issues).
+To report a vulnerability, please open an [issue here](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/issues).
