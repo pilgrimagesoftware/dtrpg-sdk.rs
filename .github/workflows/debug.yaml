@@ -97,7 +97,7 @@ jobs:
 
       - name: Read git info
         id: git_info
-        uses: YunaBraska/git-info-action@3.0.2
+        uses: YunaBraska/git-info-action@3.0.3
         with:
           work-dir: "."
           ignore-files: ".java, .groovy, .jar"
