@@ -20,6 +20,9 @@ use crate::{
     },
 };
 
+/// Maximum number of bytes logged from a failing response body.
+const LOG_PAYLOAD_LIMIT: usize = 2_000;
+
 // ── Error type ────────────────────────────────────────────────────────────────
 
 /// Errors that can be returned by [`LibraryClient`] operations.
@@ -38,6 +41,20 @@ pub enum ClientError {
     /// timeout errors, and non-success HTTP status codes when `.error_for_status()` is
     /// used.
     Http(reqwest::Error),
+    /// The HTTP response was received but could not be deserialized.
+    ///
+    /// The raw response body (truncated to [`LOG_PAYLOAD_LIMIT`] bytes) is preserved so
+    /// callers can log the offending payload for diagnosis.
+    DecodeFailed {
+        /// The URL that was requested.
+        url: String,
+        /// The HTTP status code of the response.
+        status: u16,
+        /// The deserialization error.
+        cause: serde_json::Error,
+        /// Raw response body, UTF-8 lossy, truncated to [`LOG_PAYLOAD_LIMIT`] chars.
+        payload: String,
+    },
 }
 
 impl From<SdkError> for ClientError {
@@ -57,6 +74,9 @@ impl core::fmt::Display for ClientError {
         match self {
             Self::Sdk(err) => write!(f, "SDK error: {err}"),
             Self::Http(err) => write!(f, "HTTP error: {err}"),
+            Self::DecodeFailed { url, status, cause, .. } => {
+                write!(f, "response decode failed [{url}] (HTTP {status}): {cause}")
+            }
         }
     }
 }
@@ -66,6 +86,7 @@ impl std::error::Error for ClientError {
         match self {
             Self::Sdk(err) => Some(err),
             Self::Http(err) => Some(err),
+            Self::DecodeFailed { cause, .. } => Some(cause),
         }
     }
 }
@@ -131,6 +152,36 @@ impl LibraryClient {
         format!("Bearer {}", self.token)
     }
 
+    /// Reads a response body and deserializes it as `T`.
+    ///
+    /// On failure the raw payload is logged at ERROR level (truncated to
+    /// [`LOG_PAYLOAD_LIMIT`] bytes) and a [`ClientError::DecodeFailed`] is returned so
+    /// callers have both the serde cause and the offending payload for diagnosis.
+    async fn decode_response<T: serde::de::DeserializeOwned>(
+        &self,
+        url: &str,
+        response: reqwest::Response,
+    ) -> Result<T, ClientError> {
+        let status = response.status().as_u16();
+        let bytes = response.bytes().await.map_err(ClientError::Http)?;
+        serde_json::from_slice::<T>(&bytes).map_err(|cause| {
+            let raw = String::from_utf8_lossy(&bytes);
+            let payload: String = if raw.len() > LOG_PAYLOAD_LIMIT {
+                format!("{}… (truncated)", &raw[..LOG_PAYLOAD_LIMIT])
+            } else {
+                raw.into_owned()
+            };
+            tracing::error!(
+                url = %url,
+                status = status,
+                payload = %payload,
+                error = %cause,
+                "API response decode failed"
+            );
+            ClientError::DecodeFailed { url: url.to_string(), status, cause, payload }
+        })
+    }
+
     // ── Ordered Products ──────────────────────────────────────────────────────
 
     /// Fetches a paginated list of ordered products from the authenticated user's library.
@@ -175,17 +226,17 @@ impl LibraryClient {
             query.push(("updatedDate[after]", date));
         }
 
+        tracing::debug!(method = "GET", url = %url, "SDK request");
         let response = self
             .http
             .get(&url)
             .query(&query)
             .header("Authorization", self.auth_header())
             .send()
-            .await?
-            .json::<OrderProductListResponse>()
             .await?;
+        tracing::debug!(url = %url, status = response.status().as_u16(), "SDK response");
 
-        Ok(response)
+        self.decode_response(&url, response).await
     }
 
     /// Fetches the details of a single ordered product by its identifier.
@@ -206,17 +257,17 @@ impl LibraryClient {
 
         let query = [("applicationKey", self.config.application_key().to_string())];
 
+        tracing::debug!(method = "GET", url = %url, "SDK request");
         let response = self
             .http
             .get(&url)
             .query(&query)
             .header("Authorization", self.auth_header())
             .send()
-            .await?
-            .json::<OrderProductItemResponse>()
             .await?;
+        tracing::debug!(url = %url, status = response.status().as_u16(), "SDK response");
 
-        Ok(response)
+        self.decode_response(&url, response).await
     }
 
     /// Prepares a download for the given ordered product and returns the raw API response.
@@ -241,17 +292,17 @@ impl LibraryClient {
 
         let query = [("applicationKey", self.config.application_key().to_string())];
 
+        tracing::debug!(method = "GET", url = %url, "SDK request");
         let response = self
             .http
             .get(&url)
             .query(&query)
             .header("Authorization", self.auth_header())
             .send()
-            .await?
-            .json::<serde_json::Value>()
             .await?;
+        tracing::debug!(url = %url, status = response.status().as_u16(), "SDK response");
 
-        Ok(response)
+        self.decode_response(&url, response).await
     }
 
     // ── Product Lists ─────────────────────────────────────────────────────────
@@ -282,17 +333,17 @@ impl LibraryClient {
             query.push(("pageSize", page_size.to_string()));
         }
 
+        tracing::debug!(method = "GET", url = %url, "SDK request");
         let response = self
             .http
             .get(&url)
             .query(&query)
             .header("Authorization", self.auth_header())
             .send()
-            .await?
-            .json::<ProductListCollectionResponse>()
             .await?;
+        tracing::debug!(url = %url, status = response.status().as_u16(), "SDK response");
 
-        Ok(response)
+        self.decode_response(&url, response).await
     }
 
     /// Fetches a paginated list of items within a specific product list.
@@ -324,16 +375,16 @@ impl LibraryClient {
             query.push(("pageSize", page_size.to_string()));
         }
 
+        tracing::debug!(method = "GET", url = %url, "SDK request");
         let response = self
             .http
             .get(&url)
             .query(&query)
             .header("Authorization", self.auth_header())
             .send()
-            .await?
-            .json::<ProductListItemsResponse>()
             .await?;
+        tracing::debug!(url = %url, status = response.status().as_u16(), "SDK response");
 
-        Ok(response)
+        self.decode_response(&url, response).await
     }
 }

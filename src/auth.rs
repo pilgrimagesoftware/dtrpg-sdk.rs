@@ -11,6 +11,8 @@
 
 use core::fmt;
 
+use serde::Deserialize;
+
 use crate::error::AuthSessionError;
 
 /// The raw authentication token payload returned by the DriveThruRPG API.
@@ -18,13 +20,15 @@ use crate::error::AuthSessionError;
 /// This struct is a direct representation of the API response fields. Callers should
 /// convert it into an [`AuthSession`] via [`AuthSession::from_api_response`] before
 /// treating the session as active.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize)]
 pub struct AuthTokenResponse {
     /// The short-lived JWT access token used to authenticate API requests.
     pub token: String,
     /// The long-lived refresh token used to obtain a new access token.
+    #[serde(rename = "refreshToken")]
     pub refresh_token: String,
     /// Unix timestamp (seconds) at which the refresh token expires.
+    #[serde(rename = "refreshTokenTTL")]
     pub refresh_token_ttl: u64,
 }
 

@@ -38,6 +38,7 @@
 //! ```
 
 pub mod auth;
+pub mod auth_client;
 pub mod client;
 pub mod config;
 pub mod error;
