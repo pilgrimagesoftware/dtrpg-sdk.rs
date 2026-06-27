@@ -147,9 +147,11 @@ impl LibraryClient {
         )
     }
 
-    /// Returns the `Authorization: Bearer <token>` header value for the active session.
-    fn auth_header(&self) -> String {
-        format!("Bearer {}", self.token)
+    /// Returns the `Authorization` header value for the active session.
+    ///
+    /// The DTRPG API expects the raw JWT token without a `Bearer` prefix.
+    fn auth_header(&self) -> &str {
+        &self.token
     }
 
     /// Reads a response body and deserializes it as `T`.
@@ -188,9 +190,8 @@ impl LibraryClient {
     ///
     /// Maps to `GET /{api_version}/order_products`.
     ///
-    /// Authentication is supplied via both the `applicationKey` query parameter and the
-    /// `Authorization: Bearer` header as required by the API contract. All fields of
-    /// [`LibraryItemsParams`] that are `Some` are included as additional query parameters.
+    /// Authentication is supplied via the `Authorization` header containing the raw JWT token.
+    /// All fields of [`LibraryItemsParams`] that are `Some` are included as query parameters.
     ///
     /// # Errors
     ///
@@ -201,8 +202,7 @@ impl LibraryClient {
     ) -> Result<OrderProductListResponse, ClientError> {
         let url = self.endpoint("order_products");
 
-        let mut query: Vec<(&str, String)> =
-            vec![("applicationKey", self.config.application_key().to_string())];
+        let mut query: Vec<(&str, String)> = Vec::new();
 
         if let Some(page) = params.page {
             query.push(("page", page.to_string()));
@@ -243,8 +243,7 @@ impl LibraryClient {
     ///
     /// Maps to `GET /{api_version}/order_products/{order_product_id}`.
     ///
-    /// Authentication is supplied via both the `applicationKey` query parameter and the
-    /// `Authorization: Bearer` header.
+    /// Authentication is supplied via the `Authorization` header containing the raw JWT token.
     ///
     /// # Errors
     ///
@@ -255,13 +254,10 @@ impl LibraryClient {
     ) -> Result<OrderProductItemResponse, ClientError> {
         let url = self.endpoint(&format!("order_products/{order_product_id}"));
 
-        let query = [("applicationKey", self.config.application_key().to_string())];
-
         tracing::debug!(method = "GET", url = %url, "SDK request");
         let response = self
             .http
             .get(&url)
-            .query(&query)
             .header("Authorization", self.auth_header())
             .send()
             .await?;
@@ -278,8 +274,7 @@ impl LibraryClient {
     /// endpoint has not yet been formally defined by the API contract. The type will be
     /// tightened in a future change once the API contract matures.
     ///
-    /// Authentication is supplied via both the `applicationKey` query parameter and the
-    /// `Authorization: Bearer` header.
+    /// Authentication is supplied via the `Authorization` header containing the raw JWT token.
     ///
     /// # Errors
     ///
@@ -290,13 +285,10 @@ impl LibraryClient {
     ) -> Result<serde_json::Value, ClientError> {
         let url = self.endpoint(&format!("order_products/{order_product_id}/prepare"));
 
-        let query = [("applicationKey", self.config.application_key().to_string())];
-
         tracing::debug!(method = "GET", url = %url, "SDK request");
         let response = self
             .http
             .get(&url)
-            .query(&query)
             .header("Authorization", self.auth_header())
             .send()
             .await?;
@@ -311,8 +303,8 @@ impl LibraryClient {
     ///
     /// Maps to `GET /{api_version}/product_lists`.
     ///
-    /// Authentication is supplied via both the `applicationKey` query parameter and the
-    /// `Authorization: Bearer` header. Pagination is controlled via [`PageParams`].
+    /// Authentication is supplied via the `Authorization` header containing the raw JWT token.
+    /// Pagination is controlled via [`PageParams`].
     ///
     /// # Errors
     ///
@@ -323,8 +315,7 @@ impl LibraryClient {
     ) -> Result<ProductListCollectionResponse, ClientError> {
         let url = self.endpoint("product_lists");
 
-        let mut query: Vec<(&str, String)> =
-            vec![("applicationKey", self.config.application_key().to_string())];
+        let mut query: Vec<(&str, String)> = Vec::new();
 
         if let Some(page) = params.page {
             query.push(("page", page.to_string()));
@@ -350,8 +341,8 @@ impl LibraryClient {
     ///
     /// Maps to `GET /{api_version}/product_list_items?productListId={product_list_id}`.
     ///
-    /// Authentication is supplied via both the `applicationKey` query parameter and the
-    /// `Authorization: Bearer` header. Pagination is controlled via [`PageParams`].
+    /// Authentication is supplied via the `Authorization` header containing the raw JWT token.
+    /// Pagination is controlled via [`PageParams`].
     ///
     /// # Errors
     ///
@@ -363,10 +354,8 @@ impl LibraryClient {
     ) -> Result<ProductListItemsResponse, ClientError> {
         let url = self.endpoint("product_list_items");
 
-        let mut query: Vec<(&str, String)> = vec![
-            ("applicationKey", self.config.application_key().to_string()),
-            ("productListId", product_list_id.to_string()),
-        ];
+        let mut query: Vec<(&str, String)> =
+            vec![("productListId", product_list_id.to_string())];
 
         if let Some(page) = params.page {
             query.push(("page", page.to_string()));

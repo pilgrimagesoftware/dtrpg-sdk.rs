@@ -35,7 +35,8 @@ pub async fn authenticate(api_key: &str, config: &Config) -> Result<AuthTokenRes
     tracing::debug!(url = %url, status = status, "SDK response");
 
     let bytes = response.bytes().await.map_err(ClientError::Http)?;
-    serde_json::from_slice::<AuthTokenResponse>(&bytes).map_err(|cause| {
+    serde_json::from_slice::<AuthTokenResponse>(&bytes)
+        .map_err(|cause| {
         let raw = String::from_utf8_lossy(&bytes);
         let payload: String = if raw.len() > LOG_PAYLOAD_LIMIT {
             format!("{}… (truncated)", &raw[..LOG_PAYLOAD_LIMIT])
