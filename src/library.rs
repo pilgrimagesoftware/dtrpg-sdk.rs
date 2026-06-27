@@ -15,7 +15,19 @@
 //!
 //! [`LibraryClient`]: crate::LibraryClient
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
+
+/// Deserializes a JSON null or missing field as the type's default value.
+///
+/// Use via `#[serde(default, deserialize_with = "null_as_default")]` on fields that the
+/// API may send as `null` but that should be treated as empty collections or zero values.
+fn null_as_default<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+where
+    T: Default + Deserialize<'de>,
+    D: Deserializer<'de>,
+{
+    Ok(Option::<T>::deserialize(deserializer)?.unwrap_or_default())
+}
 
 // ── Pagination ────────────────────────────────────────────────────────────────
 
@@ -79,6 +91,9 @@ pub struct OrderProductFile {
     #[serde(rename = "sizeMB")]
     pub size_mb: String,
     /// Checksums available for verifying the integrity of the downloaded file.
+    ///
+    /// The API may return `null` for products without checksum data; treated as empty.
+    #[serde(default, deserialize_with = "null_as_default")]
     pub checksums: Vec<FileChecksum>,
 }
 
@@ -217,14 +232,20 @@ pub struct OrderProductItem {
 // ── Publisher (included resource) ────────────────────────────────────────────
 
 /// Attributes for a publisher resource included alongside ordered product responses.
+///
+/// All fields are defaulted because the `included` array may contain mixed resource types
+/// (Publisher, Product, Order). Non-publisher items will deserialize with zero/empty values
+/// and are filtered out by callers that check `publisher_id > 0`.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct PublisherAttributes {
     /// The display name of the publisher.
+    #[serde(default)]
     pub name: String,
     /// The unique identifier of the publisher.
-    #[serde(rename = "publisherId")]
+    #[serde(rename = "publisherId", default)]
     pub publisher_id: u64,
     /// The URL slug for the publisher's storefront page.
+    #[serde(default)]
     pub slug: String,
 }
 
