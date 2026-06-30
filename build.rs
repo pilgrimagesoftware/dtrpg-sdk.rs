@@ -43,7 +43,8 @@ fn main() {
     generated.push_str("];\n");
 
     let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR"));
-    fs::write(out_dir.join("openapi.rs"), generated).expect("failed to write generated OpenAPI Rust");
+    fs::write(out_dir.join("openapi.rs"), generated)
+        .expect("failed to write generated OpenAPI Rust");
 }
 
 fn parse_server_url(spec: &str) -> Option<&str> {

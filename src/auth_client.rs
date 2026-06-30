@@ -20,7 +20,10 @@ const LOG_PAYLOAD_LIMIT: usize = 2_000;
 ///
 /// Returns [`ClientError::Http`] on transport or server errors.
 /// Returns [`ClientError::DecodeFailed`] if the response body cannot be parsed.
-pub async fn authenticate(api_key: &str, config: &Config) -> Result<AuthTokenResponse, ClientError> {
+pub async fn authenticate(
+    api_key: &str,
+    config: &Config,
+) -> Result<AuthTokenResponse, ClientError> {
     let url = format!("{}/{}/auth_key", config.base_url(), config.api_version());
     let http = reqwest::Client::new();
 
@@ -35,8 +38,7 @@ pub async fn authenticate(api_key: &str, config: &Config) -> Result<AuthTokenRes
     tracing::debug!(url = %url, status = status, "SDK response");
 
     let bytes = response.bytes().await.map_err(ClientError::Http)?;
-    serde_json::from_slice::<AuthTokenResponse>(&bytes)
-        .map_err(|cause| {
+    serde_json::from_slice::<AuthTokenResponse>(&bytes).map_err(|cause| {
         let raw = String::from_utf8_lossy(&bytes);
         let payload: String = if raw.len() > LOG_PAYLOAD_LIMIT {
             format!("{}… (truncated)", &raw[..LOG_PAYLOAD_LIMIT])
@@ -50,6 +52,11 @@ pub async fn authenticate(api_key: &str, config: &Config) -> Result<AuthTokenRes
             error = %cause,
             "auth_key response decode failed"
         );
-        ClientError::DecodeFailed { url: url.clone(), status, cause, payload }
+        ClientError::DecodeFailed {
+            url: url.clone(),
+            status,
+            cause,
+            payload,
+        }
     })
 }

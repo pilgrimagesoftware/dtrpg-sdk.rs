@@ -74,7 +74,9 @@ impl core::fmt::Display for ClientError {
         match self {
             Self::Sdk(err) => write!(f, "SDK error: {err}"),
             Self::Http(err) => write!(f, "HTTP error: {err}"),
-            Self::DecodeFailed { url, status, cause, .. } => {
+            Self::DecodeFailed {
+                url, status, cause, ..
+            } => {
                 write!(f, "response decode failed [{url}] (HTTP {status}): {cause}")
             }
         }
@@ -180,7 +182,12 @@ impl LibraryClient {
                 error = %cause,
                 "API response decode failed"
             );
-            ClientError::DecodeFailed { url: url.to_string(), status, cause, payload }
+            ClientError::DecodeFailed {
+                url: url.to_string(),
+                status,
+                cause,
+                payload,
+            }
         })
     }
 
@@ -354,8 +361,7 @@ impl LibraryClient {
     ) -> Result<ProductListItemsResponse, ClientError> {
         let url = self.endpoint("product_list_items");
 
-        let mut query: Vec<(&str, String)> =
-            vec![("productListId", product_list_id.to_string())];
+        let mut query: Vec<(&str, String)> = vec![("productListId", product_list_id.to_string())];
 
         if let Some(page) = params.page {
             query.push(("page", page.to_string()));

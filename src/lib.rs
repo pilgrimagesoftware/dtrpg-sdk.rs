@@ -57,7 +57,7 @@ pub use library::{
     PaginationMeta, ProductListAttributes, ProductListCollectionResponse, ProductListItem,
     ProductListItemsResponse, PublisherAttributes, PublisherItem,
 };
-pub use openapi::{OpenApiOperation, OPERATIONS};
+pub use openapi::{OPERATIONS, OpenApiOperation};
 pub use sdk::DriveThruRpgSdk;
 
 #[cfg(test)]
@@ -117,13 +117,17 @@ mod tests {
             "https://api.drivethrurpg.com/api"
         );
         assert!(crate::openapi::OPENAPI_SPEC_BYTES > 0);
-        assert!(crate::openapi::OPERATIONS.contains(&crate::OpenApiOperation {
-            method: "POST",
-            path: "/{DTRPG_API_VERSION}/auth_key",
-        }));
-        assert!(crate::openapi::OPERATIONS.contains(&crate::OpenApiOperation {
-            method: "GET",
-            path: "/{DTRPG_API_VERSION}/order_products",
-        }));
+        assert!(
+            crate::openapi::OPERATIONS.contains(&crate::OpenApiOperation {
+                method: "POST",
+                path: "/{DTRPG_API_VERSION}/auth_key",
+            })
+        );
+        assert!(
+            crate::openapi::OPERATIONS.contains(&crate::OpenApiOperation {
+                method: "GET",
+                path: "/{DTRPG_API_VERSION}/order_products",
+            })
+        );
     }
 }
