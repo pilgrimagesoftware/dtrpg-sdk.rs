@@ -16,7 +16,7 @@ use crate::{
     error::SdkError,
     library::{
         LibraryItemsParams, OrderProductItemResponse, OrderProductListResponse, PageParams,
-        ProductListCollectionResponse, ProductListItemsResponse,
+        ProductListCollectionResponse, ProductListItem, ProductListItemsResponse,
     },
 };
 
@@ -376,6 +376,33 @@ impl LibraryClient {
             .get(&url)
             .query(&query)
             .header("Authorization", self.auth_header())
+            .send()
+            .await?;
+        tracing::debug!(url = %url, status = response.status().as_u16(), "SDK response");
+
+        self.decode_response(&url, response).await
+    }
+
+    /// Creates a new product list with the given name.
+    ///
+    /// Maps to `POST /{api_version}/product_lists` with a JSON body `{"name": "<name>"}`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError::Http`] on transport failure or [`ClientError::DecodeFailed`]
+    /// if the response cannot be deserialized.
+    pub async fn create_product_list(
+        &self,
+        name: &str,
+    ) -> Result<ProductListItem, ClientError> {
+        let url = self.endpoint("product_lists");
+
+        tracing::debug!(method = "POST", url = %url, "SDK request");
+        let response = self
+            .http
+            .post(&url)
+            .header("Authorization", self.auth_header())
+            .json(&serde_json::json!({ "name": name }))
             .send()
             .await?;
         tracing::debug!(url = %url, status = response.status().as_u16(), "SDK response");
