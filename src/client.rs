@@ -409,4 +409,24 @@ impl LibraryClient {
 
         self.decode_response(&url, response).await
     }
+
+    /// Deletes a product list by id.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails.
+    pub async fn delete_product_list(&self, id: u64) -> Result<(), ClientError> {
+        let url = self.endpoint(&format!("product_lists/{id}"));
+
+        tracing::debug!(method = "DELETE", url = %url, "SDK request");
+        let response = self
+            .http
+            .delete(&url)
+            .header("Authorization", self.auth_header())
+            .send()
+            .await?;
+        tracing::debug!(url = %url, status = response.status().as_u16(), "SDK response");
+
+        response.error_for_status().map(|_| ()).map_err(ClientError::Http)
+    }
 }
