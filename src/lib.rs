@@ -52,9 +52,10 @@ pub use config::Config;
 pub use error::{AuthSessionError, SdkError};
 pub use library::{
     FileChecksum, LibraryItemsParams, OrderProductAttribute, OrderProductAttributes,
-    OrderProductFile, OrderProductFilter, OrderProductHistoryEntry, OrderProductItem,
-    OrderProductItemResponse, OrderProductListResponse, PageParams, PaginationLinks,
-    PaginationMeta, ProductListAttributes, ProductListCollectionResponse, ProductListItem,
+    OrderProductDescription, OrderProductFile, OrderProductFilter, OrderProductHistoryEntry,
+    OrderProductInfo, OrderProductItem, OrderProductItemResponse, OrderProductListResponse,
+    OrderProductOrder, OrderProductPublisher, PageParams, PaginationLinks, PaginationMeta,
+    ProductListAttributes, ProductListCollectionResponse, ProductListItem,
     ProductListItemsResponse, PublisherAttributes, PublisherItem,
 };
 pub use openapi::{OPERATIONS, OpenApiOperation};

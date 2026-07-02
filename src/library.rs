@@ -213,6 +213,91 @@ pub struct OrderProductAttributes {
     pub history: Option<Vec<OrderProductHistoryEntry>>,
     /// Optional attributes describing purchase options (format, edition, etc.).
     pub attributes: Option<Vec<OrderProductAttribute>>,
+    /// Publisher metadata embedded directly on this ordered product's attributes, when the
+    /// API includes it inline (in addition to, or instead of, sideloaded `included` publisher
+    /// resources).
+    #[serde(default)]
+    pub publisher: Option<OrderProductPublisher>,
+    /// Product catalog metadata (cover images, description) embedded on this ordered product.
+    #[serde(default)]
+    pub product: Option<OrderProductInfo>,
+    /// Order summary metadata embedded on this ordered product.
+    #[serde(default)]
+    pub order: Option<OrderProductOrder>,
+}
+
+/// Publisher metadata embedded directly on an ordered product's attributes.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct OrderProductPublisher {
+    /// The display name of the publisher.
+    pub name: String,
+    /// The unique identifier of the publisher.
+    #[serde(rename = "publisherId")]
+    pub publisher_id: u64,
+    /// The URL slug for the publisher's storefront page.
+    pub slug: String,
+}
+
+/// Descriptive text for a product, embedded within [`OrderProductInfo`].
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct OrderProductDescription {
+    /// The display name of the product.
+    pub name: String,
+    /// HTML purchase note shown to the customer, if any.
+    #[serde(rename = "purchaseNote", default)]
+    pub purchase_note: Option<String>,
+    /// The URL slug for the product's storefront page.
+    pub slug: String,
+    /// A short marketing description of the product.
+    #[serde(rename = "shortDescription", default)]
+    pub short_description: Option<String>,
+}
+
+/// Product catalog metadata embedded directly on an ordered product's attributes, including
+/// relative paths to cover images.
+///
+/// Image paths (`image`, `web_image`, `thumbnail`, `thumbnail_100`) are relative to the
+/// DriveThruRPG images base URL (`https://api.drivethrurpg.com/images/`).
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct OrderProductInfo {
+    /// Relative path to the full-size cover image, if available.
+    #[serde(default)]
+    pub image: Option<String>,
+    /// Relative path to the web-optimized (WebP) cover image, if available.
+    #[serde(rename = "webImage", default)]
+    pub web_image: Option<String>,
+    /// Relative path to the 140px cover thumbnail image, if available.
+    #[serde(default)]
+    pub thumbnail: Option<String>,
+    /// Relative path to the 100px cover thumbnail image, if available.
+    #[serde(rename = "thumbnail100", default)]
+    pub thumbnail_100: Option<String>,
+    /// Bundle ID if this product is part of a bundle, otherwise 0.
+    #[serde(rename = "bundleId")]
+    pub bundle_id: u64,
+    /// Date and time when the product was added to the DTRPG catalog, if known.
+    #[serde(rename = "dateCreated", default)]
+    pub date_created: Option<String>,
+    /// Unique identifier for the product in the DTRPG catalog.
+    #[serde(rename = "productId")]
+    pub product_id: u64,
+    /// Descriptive text for the product, if requested.
+    #[serde(default)]
+    pub description: Option<OrderProductDescription>,
+    /// Total file size in megabytes, if known.
+    #[serde(default)]
+    pub filesize: Option<f64>,
+}
+
+/// Order summary metadata embedded on an ordered product's attributes.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct OrderProductOrder {
+    /// Date and time when the order was created, if known.
+    #[serde(rename = "dateCreated", default)]
+    pub date_created: Option<String>,
+    /// The unique identifier of the order.
+    #[serde(rename = "orderId")]
+    pub order_id: u64,
 }
 
 /// A single item in an ordered products collection response.
