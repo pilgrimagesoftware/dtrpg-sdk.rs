@@ -391,10 +391,7 @@ impl LibraryClient {
     ///
     /// Returns [`ClientError::Http`] on transport failure or [`ClientError::DecodeFailed`]
     /// if the response cannot be deserialized.
-    pub async fn create_product_list(
-        &self,
-        name: &str,
-    ) -> Result<ProductListItem, ClientError> {
+    pub async fn create_product_list(&self, name: &str) -> Result<ProductListItem, ClientError> {
         let url = self.endpoint("product_lists");
 
         tracing::debug!(method = "POST", url = %url, "SDK request");
@@ -427,6 +424,9 @@ impl LibraryClient {
             .await?;
         tracing::debug!(url = %url, status = response.status().as_u16(), "SDK response");
 
-        response.error_for_status().map(|_| ()).map_err(ClientError::Http)
+        response
+            .error_for_status()
+            .map(|_| ())
+            .map_err(ClientError::Http)
     }
 }
