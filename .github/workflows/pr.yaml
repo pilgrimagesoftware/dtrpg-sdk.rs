@@ -1,50 +1,42 @@
 name: PR Validation
 
 on:
-    pull_request:
-        branches:
-            - master
-            - develop
+  pull_request:
+    branches:
+      - master
+      - develop
 
 permissions:
-    contents: read
+  contents: read
 
 env:
-    CARGO_TERM_COLOR: always
+  CARGO_TERM_COLOR: always
 
 jobs:
-    validate:
-        name: Build check
-        runs-on: ubuntu-latest
+  validate:
+    name: Build check
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v6
-              with:
-                  fetch-depth: 0
-                  fetch-tags: true
-                  show-progress: true
-                  submodules: recursive
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          show-progress: true
+          submodules: recursive
 
-            - name: Get Rust version
-              id: get_rust_version
-              run: |
-                  echo "rust_version=$(cat .rust-version)" >> $GITHUB_OUTPUT
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
 
-            - name: Set up Rust toolchain
-              uses: dtolnay/rust-toolchain@master
-              with:
-                  toolchain: ${{ steps.get_rust_version.outputs.rust_version }}
-                  components: clippy, rustfmt
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
 
-            - name: Cache dependencies
-              uses: Swatinem/rust-cache@v2
+      - name: Check formatting
+        run: cargo fmt --check
 
-            - name: Check formatting
-              run: cargo fmt --check
+      - name: Lint
+        run: cargo clippy -- -D warnings
 
-            - name: Lint
-              run: cargo clippy -- -D warnings
-
-            - name: Build
-              run: cargo build
+      - name: Build
+        run: cargo build
