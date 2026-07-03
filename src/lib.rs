@@ -51,12 +51,13 @@ pub use client::{ClientError, LibraryClient};
 pub use config::Config;
 pub use error::{AuthSessionError, SdkError};
 pub use library::{
-    FileChecksum, LibraryItemsParams, OrderProductAttribute, OrderProductAttributes,
-    OrderProductDescription, OrderProductFile, OrderProductFilter, OrderProductHistoryEntry,
-    OrderProductInfo, OrderProductItem, OrderProductItemResponse, OrderProductListResponse,
-    OrderProductOrder, OrderProductPublisher, PageParams, PaginationLinks, PaginationMeta,
-    ProductListAttributes, ProductListCollectionResponse, ProductListItem,
-    ProductListItemsResponse, PublisherAttributes, PublisherItem,
+    FileChecksum, IncludedItem, LibraryItemsParams, OrderProductAttribute,
+    OrderProductAttributes, OrderProductDescription, OrderProductFile, OrderProductFilter,
+    OrderProductHistoryEntry, OrderProductInfo, OrderProductItem, OrderProductItemResponse,
+    OrderProductListResponse, OrderProductOrder, OrderProductPublisher,
+    OrderProductRelationships, PageParams, PaginationLinks, PaginationMeta, ProductListAttributes,
+    ProductListCollectionResponse, ProductListItem, ProductListItemsResponse, PublisherAttributes,
+    PublisherItem, RelationshipData, RelationshipRef,
 };
 pub use openapi::{OPERATIONS, OpenApiOperation};
 pub use sdk::DriveThruRpgSdk;

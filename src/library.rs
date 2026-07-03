@@ -303,6 +303,11 @@ pub struct OrderProductOrder {
 /// A single item in an ordered products collection response.
 ///
 /// Follows the JSON:API resource object structure with `id`, `type`, and `attributes`.
+///
+/// The live API does *not* embed `publisher`/`product`/`order` metadata directly on
+/// `attributes` for this endpoint (despite what earlier documentation examples showed) —
+/// it references them via `relationships`, resolved against the response's top-level
+/// `included` array. See [`OrderProductRelationships`] and [`IncludedItem`].
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct OrderProductItem {
     /// The JSON:API resource identifier.
@@ -312,15 +317,46 @@ pub struct OrderProductItem {
     pub resource_type: String,
     /// The full attribute set for this ordered product.
     pub attributes: OrderProductAttributes,
+    /// JSON:API relationship references to sideloaded `Publisher`/`Product`/`Order`
+    /// resources, resolved by matching `id` against the response's `included` array.
+    #[serde(default)]
+    pub relationships: Option<OrderProductRelationships>,
 }
 
-// ── Publisher (included resource) ────────────────────────────────────────────
+/// JSON:API relationship references carried on an [`OrderProductItem`].
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct OrderProductRelationships {
+    /// Reference to the sideloaded `Publisher` resource, if present.
+    #[serde(default)]
+    pub publisher: Option<RelationshipRef>,
+    /// Reference to the sideloaded `Product` resource, if present.
+    #[serde(default)]
+    pub product: Option<RelationshipRef>,
+    /// Reference to the sideloaded `Order` resource, if present.
+    #[serde(default)]
+    pub order: Option<RelationshipRef>,
+}
+
+/// A single JSON:API relationship reference, wrapping the `data` resource identifier.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct RelationshipRef {
+    /// The referenced resource's type and id, if the relationship is populated.
+    pub data: Option<RelationshipData>,
+}
+
+/// The `type`/`id` pair identifying a JSON:API resource referenced by a relationship.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct RelationshipData {
+    /// The referenced resource's type string (e.g., `"Product"`).
+    #[serde(rename = "type")]
+    pub resource_type: String,
+    /// The referenced resource's id, matching an entry's `id` in the `included` array.
+    pub id: String,
+}
+
+// ── Sideloaded resources (`included`) ────────────────────────────────────────
 
 /// Attributes for a publisher resource included alongside ordered product responses.
-///
-/// All fields are defaulted because the `included` array may contain mixed resource types
-/// (Publisher, Product, Order). Non-publisher items will deserialize with zero/empty values
-/// and are filtered out by callers that check `publisher_id > 0`.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct PublisherAttributes {
     /// The display name of the publisher.
@@ -348,6 +384,48 @@ pub struct PublisherItem {
     pub attributes: PublisherAttributes,
 }
 
+/// A single sideloaded resource entity from the `included` array of an ordered-products
+/// list response.
+///
+/// The `included` array mixes multiple JSON:API resource types (`Publisher`, `Product`,
+/// `Order`) in a single flat list; `resource_type` disambiguates which, and `attributes`
+/// is kept as an untyped [`serde_json::Value`] since its shape depends on `resource_type`.
+/// Decode it via [`IncludedItem::as_publisher`] or [`IncludedItem::as_product`].
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct IncludedItem {
+    /// The JSON:API resource identifier. Matches a [`RelationshipData::id`] referencing it.
+    pub id: String,
+    /// The JSON:API resource type string (e.g., `"Publisher"`, `"Product"`, `"Order"`).
+    #[serde(rename = "type")]
+    pub resource_type: String,
+    /// The resource's untyped attribute payload; shape depends on `resource_type`.
+    pub attributes: serde_json::Value,
+}
+
+impl IncludedItem {
+    /// Decodes `attributes` as [`PublisherAttributes`] if `resource_type == "Publisher"`.
+    ///
+    /// Returns `None` for any other resource type or if decoding fails.
+    #[must_use]
+    pub fn as_publisher(&self) -> Option<PublisherAttributes> {
+        if self.resource_type != "Publisher" {
+            return None;
+        }
+        serde_json::from_value(self.attributes.clone()).ok()
+    }
+
+    /// Decodes `attributes` as [`OrderProductInfo`] if `resource_type == "Product"`.
+    ///
+    /// Returns `None` for any other resource type or if decoding fails.
+    #[must_use]
+    pub fn as_product(&self) -> Option<OrderProductInfo> {
+        if self.resource_type != "Product" {
+            return None;
+        }
+        serde_json::from_value(self.attributes.clone()).ok()
+    }
+}
+
 // ── Response wrappers ─────────────────────────────────────────────────────────
 
 /// A paginated collection of ordered products.
@@ -361,8 +439,8 @@ pub struct OrderProductListResponse {
     pub meta: PaginationMeta,
     /// The ordered product items on this page.
     pub data: Vec<OrderProductItem>,
-    /// Publisher resources included alongside the ordered products, if requested.
-    pub included: Option<Vec<PublisherItem>>,
+    /// Publisher/Product/Order resources sideloaded alongside the ordered products.
+    pub included: Option<Vec<IncludedItem>>,
 }
 
 /// A single ordered product resource response.
