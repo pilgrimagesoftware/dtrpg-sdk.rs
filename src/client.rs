@@ -41,6 +41,23 @@ pub enum ClientError {
     /// timeout errors, and non-success HTTP status codes when `.error_for_status()` is
     /// used.
     Http(reqwest::Error),
+    /// The provided email or password was rejected by DriveThruRPG.
+    ///
+    /// Returned by [`credential_login::login_with_credentials`] when
+    /// `validate_login_credentials.php` indicates the credentials are invalid.
+    ///
+    /// [`credential_login::login_with_credentials`]: crate::credential_login::login_with_credentials
+    InvalidCredentials,
+    /// Credentials were accepted but the application key request failed.
+    ///
+    /// Returned by [`credential_login::login_with_credentials`] when credentials
+    /// pass validation but `create_account_app.php` returns a non-success status.
+    ///
+    /// [`credential_login::login_with_credentials`]: crate::credential_login::login_with_credentials
+    ApplicationKeyRequestFailed {
+        /// The status string returned by `create_account_app.php`.
+        status: String,
+    },
     /// The HTTP response was received but could not be deserialized.
     ///
     /// The raw response body (truncated to [`LOG_PAYLOAD_LIMIT`] bytes) is preserved so
@@ -74,6 +91,10 @@ impl core::fmt::Display for ClientError {
         match self {
             Self::Sdk(err) => write!(f, "SDK error: {err}"),
             Self::Http(err) => write!(f, "HTTP error: {err}"),
+            Self::InvalidCredentials => write!(f, "invalid credentials"),
+            Self::ApplicationKeyRequestFailed { status } => {
+                write!(f, "application key request failed (status: {status})")
+            }
             Self::DecodeFailed {
                 url, status, cause, ..
             } => {
@@ -88,6 +109,7 @@ impl std::error::Error for ClientError {
         match self {
             Self::Sdk(err) => Some(err),
             Self::Http(err) => Some(err),
+            Self::InvalidCredentials | Self::ApplicationKeyRequestFailed { .. } => None,
             Self::DecodeFailed { cause, .. } => Some(cause),
         }
     }

@@ -41,6 +41,7 @@ pub mod auth;
 pub mod auth_client;
 pub mod client;
 pub mod config;
+pub mod credential_login;
 pub mod error;
 pub mod library;
 pub mod openapi;
@@ -118,7 +119,7 @@ mod tests {
             crate::openapi::DEFAULT_SERVER_URL,
             "https://api.drivethrurpg.com/api"
         );
-        assert!(crate::openapi::OPENAPI_SPEC_BYTES > 0);
+        const { assert!(crate::openapi::OPENAPI_SPEC_BYTES > 0) };
         assert!(
             crate::openapi::OPERATIONS.contains(&crate::OpenApiOperation {
                 method: "POST",

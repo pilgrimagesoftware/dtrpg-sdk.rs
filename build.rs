@@ -97,13 +97,13 @@ fn parse_operations(spec: &str) -> Vec<Operation> {
 
         if line.starts_with("    ") && !line.starts_with("      ") && trimmed.ends_with(':') {
             let method = trimmed.trim_end_matches(':');
-            if matches!(method, "get" | "post" | "put" | "patch" | "delete") {
-                if let Some(path) = &current_path {
-                    operations.push(Operation {
-                        method: method.to_ascii_uppercase(),
-                        path: path.clone(),
-                    });
-                }
+            if matches!(method, "get" | "post" | "put" | "patch" | "delete")
+                && let Some(path) = &current_path
+            {
+                operations.push(Operation {
+                    method: method.to_ascii_uppercase(),
+                    path: path.clone(),
+                });
             }
         }
     }

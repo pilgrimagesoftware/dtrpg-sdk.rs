@@ -537,6 +537,7 @@ pub struct ProductListItemsResponse {
 ///     ..Default::default()
 /// };
 /// ```
+#[derive(Default)]
 pub struct LibraryItemsParams {
     /// The page number to retrieve (1-based).
     pub page: Option<u32>,
@@ -555,20 +556,6 @@ pub struct LibraryItemsParams {
     pub updated_date_after: Option<String>,
 }
 
-impl Default for LibraryItemsParams {
-    fn default() -> Self {
-        Self {
-            page: None,
-            page_size: None,
-            get_checksum: None,
-            get_filters: None,
-            library: None,
-            archived: None,
-            updated_date_after: None,
-        }
-    }
-}
-
 /// Query parameters for paginated collection endpoints such as `/product_lists`.
 ///
 /// All fields are optional. Use [`Default::default()`] to retrieve the first page with
@@ -581,18 +568,10 @@ impl Default for LibraryItemsParams {
 ///
 /// let params = PageParams { page: Some(3), page_size: Some(25) };
 /// ```
+#[derive(Default)]
 pub struct PageParams {
     /// The page number to retrieve (1-based).
     pub page: Option<u32>,
     /// The number of items to return per page.
     pub page_size: Option<u32>,
-}
-
-impl Default for PageParams {
-    fn default() -> Self {
-        Self {
-            page: None,
-            page_size: None,
-        }
-    }
 }
