@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-tags: true
           fetch-depth: 0
@@ -80,7 +80,7 @@ jobs:
 
       - name: Generate change log
         id: gen_changelog
-        uses: kiyoon/changelog-action@v2.0.1
+        uses: kiyoon/changelog-action@v2.0.2
         with:
           new-version-tag-for-future: ${{ steps.bump_semver.outputs.new_version }}
           previous-version-tag: ${{ steps.get_latest_tag.outputs.tag }}
@@ -97,7 +97,7 @@ jobs:
 
       - name: Read git info
         id: git_info
-        uses: YunaBraska/git-info-action@3.0.2
+        uses: YunaBraska/git-info-action@3.0.3
         with:
           work-dir: "."
           ignore-files: ".java, .groovy, .jar"
