@@ -72,16 +72,6 @@ pub enum ClientError {
         /// Raw response body, UTF-8 lossy, truncated to [`LOG_PAYLOAD_LIMIT`] chars.
         payload: String,
     },
-    /// The email/password combination was rejected by `validate_login_credentials.php`.
-    ///
-    /// Produced by [`crate::credential_login::login_with_credentials`] when the
-    /// validate endpoint indicates the credentials are invalid. The second
-    /// key-retrieval call is never made in this case.
-    InvalidCredentials,
-    /// The application key request was rejected by `create_account_app.php`.
-    ///
-    /// Carries the raw `status` string returned by the server (e.g. `"failure"`).
-    KeyRequestFailed(String),
 }
 
 impl From<SdkError> for ClientError {
@@ -110,10 +100,6 @@ impl core::fmt::Display for ClientError {
             } => {
                 write!(f, "response decode failed [{url}] (HTTP {status}): {cause}")
             }
-            Self::InvalidCredentials => write!(f, "invalid email or password"),
-            Self::KeyRequestFailed(status) => {
-                write!(f, "application key request failed (status: {status})")
-            }
         }
     }
 }
@@ -125,7 +111,6 @@ impl std::error::Error for ClientError {
             Self::Http(err) => Some(err),
             Self::InvalidCredentials | Self::ApplicationKeyRequestFailed { .. } => None,
             Self::DecodeFailed { cause, .. } => Some(cause),
-            Self::InvalidCredentials | Self::KeyRequestFailed(_) => None,
         }
     }
 }
