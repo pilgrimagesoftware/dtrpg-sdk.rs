@@ -186,7 +186,7 @@ jobs:
           path: target/doc
 
       - name: Archive documentation
-        run: tar -czf docs-${{ needs.release.outputs.crate-version }}.tar.gz -C target/doc .
+        run: tar -czf "$RUNNER_TEMP/docs-${{ needs.release.outputs.crate-version }}.tar.gz" -C target/doc .
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -195,7 +195,7 @@ jobs:
           name: v${{ needs.release.outputs.crate-version }}
           files: |
             target/package/*.crate
-            docs-${{ needs.release.outputs.crate-version }}.tar.gz
+            ${{ runner.temp }}/docs-${{ needs.release.outputs.crate-version }}.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
