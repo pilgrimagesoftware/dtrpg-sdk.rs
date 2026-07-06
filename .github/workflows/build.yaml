@@ -76,7 +76,7 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      crate-version: ${{ steps.bump_version.outputs.new_tag }}
+      crate-version: ${{ steps.crate_version.outputs.version }}
 
     steps:
       - name: Checkout
@@ -93,8 +93,12 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
 
+      # master is protected (PR-only, signed commits, CodeQL) and rejects CI's
+      # direct push, so only develop bumps/tags; master just packages whatever
+      # version merged in from develop.
       - name: Bump version and push tag
         id: bump_version
+        if: github.ref == 'refs/heads/develop'
         uses: anothrNick/github-tag-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -102,6 +106,7 @@ jobs:
           DEFAULT_BUMP: patch
 
       - name: Commit and push
+        if: github.ref == 'refs/heads/develop'
         run: |
           git config --global user.email "ci@pilgrimagesoftware.com"
           git config --global user.name "Pilgrimage Software CI"
@@ -109,6 +114,12 @@ jobs:
           git add Cargo.toml
           git commit -m "chore: update Cargo.toml on ${{ github.ref_name }} with version: ${{ steps.bump_version.outputs.new_tag }} [skip ci]"
           git push origin
+
+      - name: Read crate version
+        id: crate_version
+        run: |
+          version=$(grep -m1 '^version = ' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Generate documentation
         run: cargo doc --no-deps --verbose
