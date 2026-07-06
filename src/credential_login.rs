@@ -324,7 +324,14 @@ mod tests {
             .mount(&server)
             .await;
 
-        let result = do_login("user@example.com", "wrong-password", &server.uri()).await;
+        let generated_password = format!(
+            "pw-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos()
+        );
+        let result = do_login("user@example.com", &generated_password, &server.uri()).await;
         assert!(
             matches!(result, Err(ClientError::InvalidCredentials)),
             "expected InvalidCredentials, got: {result:?}"
@@ -354,7 +361,14 @@ mod tests {
             .mount(&server)
             .await;
 
-        let result = do_login("user@example.com", "correct-password", &server.uri()).await;
+        let generated_password = format!(
+            "pw-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos()
+        );
+        let result = do_login("user@example.com", &generated_password, &server.uri()).await;
         assert!(
             matches!(
                 result,
