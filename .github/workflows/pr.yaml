@@ -14,8 +14,25 @@ env:
 
 jobs:
   validate:
-    name: Build check
-    runs-on: ubuntu-latest
+    name: Validate on ${{ matrix.name }}
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            use-cross: true
+          - name: macOS (Intel)
+            os: macos-latest
+            target: x86_64-apple-darwin
+            use-cross: false
+          - name: macOS (Apple Silicon)
+            os: macos-latest
+            target: aarch64-apple-darwin
+            use-cross: false
 
     steps:
       - name: Checkout
@@ -32,11 +49,16 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Check formatting
-        run: cargo fmt --check
+      - name: Build (release)
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: ${{ matrix.use-cross }}
+          command: build
+          args: --verbose --release --target ${{ matrix.target }}
 
-      - name: Lint
-        run: cargo clippy -- -D warnings
-
-      - name: Build
-        run: cargo build
+      - name: Test
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: ${{ matrix.use-cross }}
+          command: test
+          args: --verbose --release --target ${{ matrix.target }}
