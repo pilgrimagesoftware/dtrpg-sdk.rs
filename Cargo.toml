@@ -17,6 +17,13 @@ exclude = [
     ".rust-version",
     ".editorconfig",
     ".cargo_vcs_info.json",
+    ".release-plz.toml",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "API/AGENTS.md",
+    "API/CLAUDE.md",
+    "openspec/*",
+    "RELEASE.md",
 ]
 build = "build.rs"
 
