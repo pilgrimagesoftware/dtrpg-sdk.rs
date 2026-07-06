@@ -1,4 +1,4 @@
-# dtrpg-sdk.rs
+# DriveThruRPG SDK (Rust)
 
 A Rust SDK for the [DriveThruRPG API](https://api.drivethrurpg.com).
 
