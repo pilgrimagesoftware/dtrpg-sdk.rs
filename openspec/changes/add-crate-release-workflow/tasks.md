@@ -14,6 +14,6 @@
 
 ## 3. Verification
 
-- [ ] 3.1 Push a commit to `develop` and confirm the `publish` job is skipped.
+- [x] 3.1 Push a commit to `develop` and confirm the `publish` job is skipped. Confirmed on run 28761818082: build (Linux+macOS), release (bump/tag/docs/package), and deploy-docs all succeeded; publish shows `completed/skipped`.
 - [ ] 3.2 Push/merge to `master` and confirm: tag bump succeeds, GitHub Release is created with both assets attached, and `cargo publish` succeeds against crates.io.
 - [ ] 3.3 Re-run the workflow against an already-published version (or simulate via `cargo publish --dry-run` locally) to confirm duplicate-version failures surface as a failed job rather than a silent skip.
