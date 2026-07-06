@@ -1,0 +1,19 @@
+## 1. Prerequisites
+
+- [x] 1.1 Confirm a `crates.io` API token exists for the `dtrpg-sdk` crate owner and add it to the GitHub repo as the `CRATES_API_KEY` secret. (Secret already exists under this name.)
+
+## 2. Workflow changes
+
+- [x] 2.1 Add a `publish` job to `.github/workflows/build.yaml` with `needs: release` and a condition on `github.ref == 'refs/heads/master'`. Restructured beyond the original plan: the matrix `build` job now only compiles/tests (Linux + macOS). A new single-runner `release` job (`needs: build`, `ubuntu-latest`) does the version bump/tag/push, docs generation, and packaging exactly once. This was required because `anothrNick/github-tag-action` is a Docker container action, which GitHub Actions only supports on Linux runners — it could never run on the macOS matrix leg, and running it on both legs would race on the same tag/commit anyway.
+- [x] 2.2 In the `publish` job, download the `crate-${{ github.sha }}` and `docs-${{ github.sha }}` artifacts produced by the `release` job.
+- [x] 2.3 Package the docs directory into a `tar.gz` archive for release attachment.
+- [x] 2.4 Add a step using `softprops/action-gh-release@v2` to create a GitHub Release, attaching the `.crate` file and docs archive, tagged from `needs.release.outputs.crate-version` (the `release` job now runs once, so its `bump_version` step output is no longer ambiguous the way a matrix-job output would be).
+- [x] 2.5 Add a step running `cargo publish --verbose` with the `CARGO_REGISTRY_TOKEN` env var set from the `CRATES_API_KEY` secret, placed after the release-creation step.
+- [x] 2.6 Remove the commented-out `release-plz` step now superseded by the explicit release/publish steps.
+- [x] 2.7 Fix two pre-existing bugs uncovered while verifying this change: the macOS leg was forced through `cross`'s Docker toolchain (`use-cross: true`) and lacked the `x86_64-apple-darwin` target on the pinned `1.95.0` toolchain (`rust-toolchain.toml`), so it never actually built.
+
+## 3. Verification
+
+- [x] 3.1 Push a commit to `develop` and confirm the `publish` job is skipped. Confirmed on run 28761818082: build (Linux+macOS), release (bump/tag/docs/package), and deploy-docs all succeeded; publish shows `completed/skipped`.
+- [ ] 3.2 Push/merge to `master` and confirm: tag bump succeeds, GitHub Release is created with both assets attached, and `cargo publish` succeeds against crates.io.
+- [ ] 3.3 Re-run the workflow against an already-published version (or simulate via `cargo publish --dry-run` locally) to confirm duplicate-version failures surface as a failed job rather than a silent skip.

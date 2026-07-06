@@ -1,0 +1,4 @@
+[workspace]
+allow_dirty = true
+dependencies_update = true
+publish_allow_dirty = true
