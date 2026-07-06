@@ -8,7 +8,7 @@ readme = "README.md"
 repository = "https://github.com/pilgrimagesoftware/dtrpg-sdk.rs"
 homepage = "https://github.com/pilgrimagesoftware/dtrpg-sdk.rs"
 keywords = ["dtrpg", "api", "sdk"]
-categories = ["api-bindings", "rust"]
+categories = ["api-bindings"]
 authors = ["Paul Schifferer <paul@schifferers.net>"]
 exclude = [
     "*.orig",
