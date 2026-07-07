@@ -20,6 +20,7 @@ jobs:
           fetch-tags: true
           show-progress: true
           submodules: recursive
+          persist-credentials: false
 
       - name: Install git-cliff
         uses: taiki-e/install-action@v2
@@ -47,9 +48,8 @@ jobs:
 
       - name: Open release PR
         uses: peter-evans/create-pull-request@v6
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           branch: release/${{ steps.version.outputs.version }}
           base: master
           title: "Release ${{ steps.version.outputs.version }}"

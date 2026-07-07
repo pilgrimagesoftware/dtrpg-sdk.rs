@@ -24,3 +24,9 @@ git push origin v0.3.0
 ```
 
 The tag push triggers the release CI workflow (below), which builds, publishes to crates.io, generates the changelog scoped to that tag, and attaches it to the GitHub Release.
+
+## Triggering the run
+
+```sh
+gh workflow run prepare-release.yml
+```
