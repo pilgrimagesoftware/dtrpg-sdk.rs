@@ -5,7 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.0.30 (2026-07-07)
+
+### Chore
+
+ - <csr-id-3cce9fdd202db15f3b19b72d51d890d4c2e3ac91/> update release job in CI workflow to include checkout step and modify cargo release command
+ - <csr-id-b1af428bbe1716f92b1cd054e38fc907b8d52240/> simplify build workflow by removing release steps and renaming job
+ - <csr-id-2b234d0faa7078d21c8352f52cda89f7fa89e60c/> update version to 0.0.30 in Cargo.toml and Cargo.lock
+
+### New Features
+
+ - <csr-id-662c9cc93eae75d631d453909318f45f6f9c8e48/> add release job to CI workflow for automated cargo releases
+
+### Bug Fixes
+
+ - <csr-id-fdae5c4330f143502737e474042d0221d1867071/> add token generation step for GitHub App in release workflow
+ - <csr-id-ef0216d63773b5c6d1f18e93eeeb7ef11c1fce78/> update GitHub App token credentials in build workflow
+ - <csr-id-81f4ae76719e530a9563b0eba83f3add2c1123af/> update Cargo release step to use generated GitHub token for authentication
+ - <csr-id-254db56f39a8e78e82d9a964afc8e4836febdde8/> add continuation to commit prefix in cargo release command
+ - <csr-id-4430ef5130c3c8576838d3cc2b48c31f7160b3f2/> remove GIT_AUTHOR_IDENT from env section and set author details in release step
+ - <csr-id-4cd4625d0e51cb95fdc9a3ef87d6c1001497d216/> move GIT_AUTHOR_IDENT to env section for consistency in CI workflow
+ - <csr-id-39ec37578c3c6edcbe1439320209cab98f91d7c0/> update GIT_AUTHOR_IDENT to use a fixed author name for cargo release
+ - <csr-id-19a0e2166c64961a3523d1a56ebc09665c5a9ebc/> run cargo install quietly in CI workflow
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 12 commits contributed to the release.
+ - 12 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Add token generation step for GitHub App in release workflow ([`fdae5c4`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/fdae5c4330f143502737e474042d0221d1867071))
+    - Update GitHub App token credentials in build workflow ([`ef0216d`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/ef0216d63773b5c6d1f18e93eeeb7ef11c1fce78))
+    - Update Cargo release step to use generated GitHub token for authentication ([`81f4ae7`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/81f4ae76719e530a9563b0eba83f3add2c1123af))
+    - Add continuation to commit prefix in cargo release command ([`254db56`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/254db56f39a8e78e82d9a964afc8e4836febdde8))
+    - Remove GIT_AUTHOR_IDENT from env section and set author details in release step ([`4430ef5`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/4430ef5130c3c8576838d3cc2b48c31f7160b3f2))
+    - Move GIT_AUTHOR_IDENT to env section for consistency in CI workflow ([`4cd4625`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/4cd4625d0e51cb95fdc9a3ef87d6c1001497d216))
+    - Update GIT_AUTHOR_IDENT to use a fixed author name for cargo release ([`39ec375`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/39ec37578c3c6edcbe1439320209cab98f91d7c0))
+    - Update release job in CI workflow to include checkout step and modify cargo release command ([`3cce9fd`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/3cce9fdd202db15f3b19b72d51d890d4c2e3ac91))
+    - Add release job to CI workflow for automated cargo releases ([`662c9cc`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/662c9cc93eae75d631d453909318f45f6f9c8e48))
+    - Simplify build workflow by removing release steps and renaming job ([`b1af428`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/b1af428bbe1716f92b1cd054e38fc907b8d52240))
+    - Run cargo install quietly in CI workflow ([`19a0e21`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/19a0e2166c64961a3523d1a56ebc09665c5a9ebc))
+    - Update version to 0.0.30 in Cargo.toml and Cargo.lock ([`2b234d0`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/2b234d0faa7078d21c8352f52cda89f7fa89e60c))
+</details>
+
 ## v0.0.29 (2026-07-07)
+
+<csr-id-a826d5886828f907a8dad447d0adf89be9d34f71/>
 
 ### Chore
 
@@ -28,8 +82,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 2 commits contributed to the release.
- - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 5 commits contributed to the release.
+ - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -39,8 +93,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
-    - Name ([`e351dfc`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/e351dfc942379d97abde79cd535e4226cf668834))
-    - Update version to 0.0.29 and adjust CI workflow for semantic release ([`a826d58`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/a826d5886828f907a8dad447d0adf89be9d34f71))
+    - Merge pull request #21 from pilgrimagesoftware/fix/exclude-api-github-symlink-develop ([`17faebd`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/17faebd11a16880635ba7d37ae8515f8c1b6d335))
+    - Exclude API/.github from crate packaging ([`0561c0d`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/0561c0d1bf2937e3d8b9085ed97ed1266fb1d12b))
+    - Remove GitHub authentication step and use secret token for tagging ([`32f1518`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/32f1518023b455236cfc53a473623ff942c95fb5))
+    - Update subproject commit reference in API ([`29b1c36`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/29b1c363e741503fe86e989287514c676a6d1394))
+    - Add GitHub authentication step for tagging on develop branch ([`548271b`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/548271bcb4ddafdbad7a08ca187a0b920f6fdfbe))
 </details>
 
 ## v0.0.28 (2026-07-06)
@@ -77,6 +134,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.0.27 (2026-07-05)
+
+<csr-id-c3c784a1542689f2a1e9b8a9a9ca222003731fb8/>
+<csr-id-668a17a559dd7e66914ffcb17f2d1bf1dbf8cef2/>
+<csr-id-62a365615f9b443bf647392cd09e79cdcea570e9/>
+<csr-id-17ba64fbb461eb68c201628f4f53ec141a9529e0/>
 
 ### Chore
 
@@ -128,6 +190,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.0.26 (2026-07-05)
 
+<csr-id-1f04d86de012aeec36170eeaeee1665e79eb1191/>
+<csr-id-36a38f37c0629036dd5c9183bceb0e394a6d8ba7/>
+
 ### Chore
 
  - <csr-id-1f04d86de012aeec36170eeaeee1665e79eb1191/> update verification step to confirm publish job is skipped
@@ -154,6 +219,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.0.25 (2026-07-05)
+
+<csr-id-5ab68c075b71d8981d517ae674e08ef9fd857f90/>
+<csr-id-1ec02af988f726ea32236a8bbc458abb5026ad60/>
 
 ### Chore
 
@@ -191,6 +259,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.0.24 (2026-07-05)
 
+<csr-id-b40aa41da1e31d6dd508d381831ea7f72d1a1beb/>
+
 ### Chore
 
  - <csr-id-b40aa41da1e31d6dd508d381831ea7f72d1a1beb/> update Cargo.toml on develop with version: 0.0.23 [skip ci]
@@ -223,6 +293,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.0.23 (2026-07-05)
+
+<csr-id-968312409737eda40245008b1bdbd89f3bc03542/>
 
 ### Chore
 
@@ -261,6 +333,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.0.22 (2026-07-05)
 
+<csr-id-90321c474134f3ee304d9b2823bedabc84e6d4cd/>
+
 ### Chore
 
  - <csr-id-90321c474134f3ee304d9b2823bedabc84e6d4cd/> update Cargo.toml on develop with version: 0.0.21 [skip ci]
@@ -293,6 +367,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.0.21 (2026-07-05)
+
+<csr-id-f38bebc042b0bac86e4bcf50e3131a33183a8004/>
+<csr-id-0c6fd32abb61b5b2ae362c217b82e2c4e3189641/>
 
 ### Chore
 
@@ -332,6 +409,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.0.20 (2026-07-05)
 
+<csr-id-e442b84698e13ff90f684082f9325c6a61b255d7/>
+<csr-id-fabed0a7c34f56427bccbe41747b0efba81ba704/>
+<csr-id-0428035341d4e2d40cf5caafe9dc2e060601ab07/>
+<csr-id-0774283845c16f911c9fb2344eb04566eace577d/>
+
 ### Chore
 
  - <csr-id-e442b84698e13ff90f684082f9325c6a61b255d7/> checkpoint
@@ -368,6 +450,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.0.19 (2026-07-04)
+
+<csr-id-e2e51e670be92caca58b2be24a9513a77ed521e2/>
+<csr-id-79aef39215ca896d4cef0e28e935d0bba2c9485d/>
+<csr-id-fb8c1b2aa5cc6dcc190d76f5bf7dc0d77f671633/>
+<csr-id-ba590fb00fa0aa5ddaab82558d8a27be10e101cd/>
+<csr-id-227de07cafc761cbb3dbcf2d092e550ccb76e142/>
 
 ### Chore
 
@@ -435,6 +523,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.0.18 (2026-07-02)
 
+<csr-id-410462078e5e5b739770dc611da02f0f6b8aea6c/>
+<csr-id-e87c4a8a1e7741028bdebe628526acac7311f680/>
+
 ### Chore
 
  - <csr-id-410462078e5e5b739770dc611da02f0f6b8aea6c/> bump dtrpg-sdk version to 0.0.16
@@ -461,6 +552,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.0.17 (2026-07-02)
+
+<csr-id-c0cd7bdfd5b4c01fbb58118d267b5ed4d317b171/>
 
 ### Chore
 
@@ -494,6 +587,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.0.16 (2026-07-02)
+
+<csr-id-f52deee69f9692cbfda7b15d1691d2fef6de757d/>
 
 ### Chore
 
@@ -532,6 +627,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.0.15 (2026-07-01)
 
+<csr-id-4a597e7e81a31dd3736106717900c8ecd035f054/>
+<csr-id-e35c9c536a64fdc83b8a8399fd88b7e8a3011b7c/>
+
 ### Chore
 
  - <csr-id-4a597e7e81a31dd3736106717900c8ecd035f054/> update version
@@ -561,6 +659,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.0.14 (2026-06-30)
 
+<csr-id-ad06fcf2d54fd8896c419b43dd5305f618932382/>
+<csr-id-4568426d652d8adb5efcacef7795dabb7af545db/>
+<csr-id-3d11c1715c184c7fa7014fdc8a4b96c3e8f84ddb/>
+
 ### Chore
 
  - <csr-id-ad06fcf2d54fd8896c419b43dd5305f618932382/> add delete
@@ -588,6 +690,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.0.13 (2026-06-30)
+
+<csr-id-9a0c5d8fe2e9af519d95ab51571918e50aae4516/>
+<csr-id-88046f4e17a406a8cb873c95e49cf62d80e65e0c/>
+<csr-id-32a8ee7e5ff6193a84d73b21d38e073372377716/>
 
 ### Chore
 
@@ -624,6 +730,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.0.12 (2026-06-26)
+
+<csr-id-06df969e0c52f9214f641b6df60ef9fc464c1339/>
+<csr-id-4ceaf0c6511fedef50bef523d0809b7ca22a822d/>
+<csr-id-153f33e607e3af30fb561957cdefdbed9d9e2af7/>
+<csr-id-b1ce7d5509f092180f428568895076aed10a7231/>
+<csr-id-7f3906ca0712f034dbe0b888b559f7d464574bcf/>
+<csr-id-33ec47a5b0fc3ab527ebac2951165e5a3a772e7f/>
+<csr-id-9f0b342ca8be7b229519991d2b89df0fe2505cbe/>
+<csr-id-988bd0678ff38ae9d50a3713094a9b5a0c073876/>
+<csr-id-f1e28c88dd93ea8efa09aa3a788b414b60471bb0/>
+<csr-id-2cc98309d0de67951189c304de3bc43aa03ba386/>
+<csr-id-390955168d43efcac9743f399d1daf566c6b0dd4/>
+<csr-id-40dc16e38edd75785d19b0ca5a9c9dd8229f6c27/>
+<csr-id-ee9c7bb2595bc28ccd7d38a40042654d643eefc9/>
+<csr-id-8574d790c5f828dea1a754b123855118543ac2f4/>
+<csr-id-8041c3eccbb2b524e359eeb11214ba053a3bd877/>
+<csr-id-f79e4581620577cf6c446efab4288727cef4956a/>
+<csr-id-83cd3b384bbb93116dcb5121689ba06f1a599460/>
+<csr-id-923924ae9a0bcd402cadba4fdadb3c7284e89c31/>
+<csr-id-c9f1890fde8c3dcd4951bc1cada0a4117d669db9/>
+<csr-id-c862eb79ef7a4e0cbdc92c8f72e0547f5ea4d3a2/>
+<csr-id-4bf9cf7a19321493aa1a440ea5fead4b7cc6a151/>
+<csr-id-6ec122ef3be00426b28e4b05d3745a954f80af0b/>
 
 ### Chore
 
@@ -812,6 +941,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.0.11 (2026-04-30)
 
+<csr-id-17300d8d4cd9edf8ac52d8bfa225a2a202efbcce/>
+<csr-id-79464b9dc738c38fdc15166bef311d5ba5eb95ab/>
+
 ### Chore
 
  - <csr-id-17300d8d4cd9edf8ac52d8bfa225a2a202efbcce/> update code, spec, and tests
@@ -838,6 +970,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.0.10 (2026-04-23)
+
+<csr-id-0b816fd2e08d2ee418e823fd7040baa16d173a6b/>
+<csr-id-b99154ff8a2015bbdc22602cd18f84ac0c93dc71/>
 
 ### Chore
 
@@ -870,6 +1005,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.0.9 (2026-04-23)
 
+<csr-id-4ffd1f6f3ef3c90b69258e04d14a1f3a6570cf58/>
+
 ### Chore
 
  - <csr-id-4ffd1f6f3ef3c90b69258e04d14a1f3a6570cf58/> update Cargo.toml on develop with version: 0.0.8 [skip ci]
@@ -892,7 +1029,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Update Cargo.toml on develop with version: 0.0.8 [skip ci] ([`4ffd1f6`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/4ffd1f6f3ef3c90b69258e04d14a1f3a6570cf58))
 </details>
 
+## v0.0.7 (2026-04-23)
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 1 commit contributed to the release.
+ - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Update Cargo.toml on develop with version: 0.0.6 [skip ci] ([`561569a`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/561569a36d622eae566cf5c23ae345a59a7d17b4))
+</details>
+
 ## v0.0.8 (2026-04-22)
+
+<csr-id-6df5e1c7b0b68c88fdcf0d4197c91d0883b43998/>
 
 ### Chore
 
@@ -917,26 +1076,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Merge pull request #1 from pilgrimagesoftware/fix/workflow-perms-2 ([`c16acf3`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/c16acf320bf9e6c479c3cbc1c33df79deada60d8))
     - Potential fix for code scanning alert no. 1: Workflow does not contain permissions ([`202259f`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/202259f5dddb5d4114dfa83f73f64ab731a8759d))
     - Update Cargo.toml on develop with version: 0.0.7 [skip ci] ([`f68418f`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/f68418ff07596685a1476a265fafabeb1416f792))
-</details>
-
-## v0.0.7 (2026-04-23)
-
-### Commit Statistics
-
-<csr-read-only-do-not-edit/>
-
- - 1 commit contributed to the release.
- - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
- - 0 issues like '(#ID)' were seen in commit messages
-
-### Commit Details
-
-<csr-read-only-do-not-edit/>
-
-<details><summary>view details</summary>
-
- * **Uncategorized**
-    - Update Cargo.toml on develop with version: 0.0.6 [skip ci] ([`561569a`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/561569a36d622eae566cf5c23ae345a59a7d17b4))
 </details>
 
 ## v0.0.6 (2026-04-22)
@@ -1083,6 +1222,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.0.1 (2026-04-22)
+
+<csr-id-05156a046392b7e9727c76751254354e6713bdd7/>
+<csr-id-52935c38eb5c1cbf4f127098296a473b8edb19d1/>
 
 ### Chore
 
