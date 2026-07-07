@@ -1,0 +1,57 @@
+name: Prepare Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency: release
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # full history required for git-cliff
+          fetch-tags: true
+          show-progress: true
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
+
+      - name: Install cargo-edit
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-edit
+
+      - name: Determine next version
+        id: version
+        run: |
+          NEXT_VERSION=$(git-cliff --bumped-version)
+          echo "version=${NEXT_VERSION#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Bump Cargo.toml
+        run: |
+          cargo set-version ${{ steps.version.outputs.version }}
+
+      - name: Update changelog
+        run: |
+          git-cliff --tag v${{ steps.version.outputs.version }} --unreleased --prepend CHANGELOG.md
+
+      - name: Open release PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: release/${{ steps.version.outputs.version }}
+          base: master
+          title: "Release ${{ steps.version.outputs.version }}"
+          commit-message: "chore(release): ${{ steps.version.outputs.version }}"
+          body: "Automated release PR. Review the changelog and Cargo.toml version before merging."
