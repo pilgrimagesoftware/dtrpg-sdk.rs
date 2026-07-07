@@ -93,6 +93,13 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
 
+      - name: Authenticate with GitHub
+        id: auth
+        uses: actions/create-github-app-token
+        with:
+          client-id: ${{ secrets.PSW_CI_APP_ID }}
+          private-key: ${{ secrets.PSW_CI_PRIVATE_KEY }}
+
       # master is protected (PR-only, signed commits, CodeQL) and rejects CI's
       # direct push, so only develop bumps/tags; master just packages whatever
       # version merged in from develop.
@@ -101,7 +108,7 @@ jobs:
         if: github.ref == 'refs/heads/develop'
         uses: anothrNick/github-tag-action@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.auth.outputs.token }}
           WITH_V: false
           DEFAULT_BUMP: patch
 
