@@ -105,37 +105,48 @@ jobs:
       #     WITH_V: false
       #     DEFAULT_BUMP: patch
 
-      - name: Compute next version, tag, and release notes
-        id: bump_version
-        uses: cycjimmy/semantic-release-action@v6
-        with:
-          # No "v" prefix, matching the existing tag scheme (e.g. `0.0.6`);
-          # see `tagFormat` in `.releaserc.yaml`. Commits that don't follow
-          # Conventional Commits don't fail this step: the
-          # conventionalcommits preset just ignores them when computing the
-          # next version (see the comment in `.releaserc.yaml`).
-          extra_plugins: |
-            conventional-changelog-conventionalcommits
-            @semantic-release/exec
-            @semantic-release/git
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Compute next version, tag, and release notes
+      #   id: bump_version
+      #   uses: cycjimmy/semantic-release-action@v6
+      #   with:
+      #     # No "v" prefix, matching the existing tag scheme (e.g. `0.0.6`);
+      #     # see `tagFormat` in `.releaserc.yaml`. Commits that don't follow
+      #     # Conventional Commits don't fail this step: the
+      #     # conventionalcommits preset just ignores them when computing the
+      #     # next version (see the comment in `.releaserc.yaml`).
+      #     extra_plugins: |
+      #       conventional-changelog-conventionalcommits
+      #       @semantic-release/exec
+      #       @semantic-release/git
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Commit and push
+      # - name: Commit and push
+      #   if: github.ref == 'refs/heads/develop'
+      #   run: |
+      #     git config --global user.email "ci@pilgrimagesoftware.com"
+      #     git config --global user.name "Pilgrimage Software CI"
+      #     sed -i 's/^version = ".*"$/version = "'${{ steps.bump_version.outputs.new_tag }}'"/' Cargo.toml
+      #     git add Cargo.toml
+      #     git commit -m "chore: update Cargo.toml on ${{ github.ref_name }} with version: ${{ steps.bump_version.outputs.new_tag }} [skip ci]"
+      #     git push origin
+
+      # - name: Read crate version
+      #   id: crate_version
+      #   run: |
+      #     version=$(grep -m1 '^version = ' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
+      #     echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Cargo release
+        id: cargo_release
         if: github.ref == 'refs/heads/develop'
         run: |
-          git config --global user.email "ci@pilgrimagesoftware.com"
-          git config --global user.name "Pilgrimage Software CI"
-          sed -i 's/^version = ".*"$/version = "'${{ steps.bump_version.outputs.new_tag }}'"/' Cargo.toml
-          git add Cargo.toml
-          git commit -m "chore: update Cargo.toml on ${{ github.ref_name }} with version: ${{ steps.bump_version.outputs.new_tag }} [skip ci]"
-          git push origin
-
-      - name: Read crate version
-        id: crate_version
-        run: |
-          version=$(grep -m1 '^version = ' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+          cargo install cargo-smart-release
+          cargo smart-release \
+            --bump auto \
+            --allow-fully-generated-changelogs \
+            --signoff \
+            --execute
 
       - name: Generate documentation
         run: cargo doc --no-deps --verbose
