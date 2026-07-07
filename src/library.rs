@@ -517,6 +517,36 @@ pub struct ProductListItemsResponse {
     pub data: Vec<serde_json::Value>,
 }
 
+/// Request body for adding a product to a product list.
+///
+/// Sent by `POST /{api_version}/product_list_items`.
+#[derive(Clone, Debug, Serialize)]
+pub struct ProductListItemCreateRequest {
+    /// Unique identifier of the product to add.
+    #[serde(rename = "productId")]
+    pub product_id: u64,
+    /// Unique identifier of the product list to add the product to.
+    #[serde(rename = "productListId")]
+    pub product_list_id: u64,
+}
+
+/// The created product list item.
+///
+/// Returned by `POST /{api_version}/product_list_items`.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ProductListItemCreateResponse {
+    /// Unique identifier of the product added to the list.
+    #[serde(rename = "productId")]
+    pub product_id: u64,
+    /// Unique identifier of the product list the product was added to.
+    #[serde(rename = "productListId")]
+    pub product_list_id: u64,
+    /// Unique identifier assigned to this product list item. Required to remove
+    /// the item later via `DELETE /{api_version}/product_list_items/{id}`.
+    #[serde(rename = "productListItemId")]
+    pub product_list_item_id: u64,
+}
+
 // ── Query parameter structs ───────────────────────────────────────────────────
 
 /// Query parameters for the `GET /order_products` (library items) endpoint.
