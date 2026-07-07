@@ -93,17 +93,33 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
 
-      # master is protected (PR-only, signed commits, CodeQL) and rejects CI's
-      # direct push, so only develop bumps/tags; master just packages whatever
-      # version merged in from develop.
-      - name: Bump version and push tag
-        id: bump_version
-        if: github.ref == 'refs/heads/develop'
-        uses: anothrNick/github-tag-action@v1
+      # # master is protected (PR-only, signed commits, CodeQL) and rejects CI's
+      # # direct push, so only develop bumps/tags; master just packages whatever
+      # # version merged in from develop.
+      # - name: Bump version and push tag
+      #   id: bump_version
+      #   if: github.ref == 'refs/heads/develop'
+      #   uses: anothrNick/github-tag-action@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     WITH_V: false
+      #     DEFAULT_BUMP: patch
+
+      - name: Compute next version, tag, and release notes
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v6
+        with:
+          # No "v" prefix, matching the existing tag scheme (e.g. `0.0.6`);
+          # see `tagFormat` in `.releaserc.yaml`. Commits that don't follow
+          # Conventional Commits don't fail this step: the
+          # conventionalcommits preset just ignores them when computing the
+          # next version (see the comment in `.releaserc.yaml`).
+          extra_plugins: |
+            conventional-changelog-conventionalcommits
+            @semantic-release/exec
+            @semantic-release/git
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WITH_V: false
-          DEFAULT_BUMP: patch
 
       - name: Commit and push
         if: github.ref == 'refs/heads/develop'
