@@ -106,7 +106,7 @@ jobs:
       #     DEFAULT_BUMP: patch
 
       - name: Compute next version, tag, and release notes
-        id: semantic
+        id: bump_version
         uses: cycjimmy/semantic-release-action@v6
         with:
           # No "v" prefix, matching the existing tag scheme (e.g. `0.0.6`);
