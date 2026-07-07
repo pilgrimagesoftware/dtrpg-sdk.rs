@@ -25,7 +25,9 @@ jobs:
         uses: taiki-e/install-action@git-cliff
 
       - name: Install cargo-edit
-        uses: taiki-e/install-action@cargo-edit
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-edit
 
       - name: Determine next version
         id: version
