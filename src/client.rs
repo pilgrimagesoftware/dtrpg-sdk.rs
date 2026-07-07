@@ -16,7 +16,8 @@ use crate::{
     error::SdkError,
     library::{
         LibraryItemsParams, OrderProductItemResponse, OrderProductListResponse, PageParams,
-        ProductListCollectionResponse, ProductListItem, ProductListItemsResponse,
+        ProductListCollectionResponse, ProductListItem, ProductListItemCreateRequest,
+        ProductListItemCreateResponse, ProductListItemsResponse,
     },
 };
 
@@ -450,5 +451,161 @@ impl LibraryClient {
             .error_for_status()
             .map(|_| ())
             .map_err(ClientError::Http)
+    }
+
+    /// Adds a product to a product list as a member.
+    ///
+    /// Maps to `POST /{api_version}/product_list_items`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError::Http`] on transport failure or [`ClientError::DecodeFailed`]
+    /// if the response cannot be deserialized.
+    pub async fn add_product_list_item(
+        &self,
+        product_list_id: u64,
+        product_id: u64,
+    ) -> Result<ProductListItemCreateResponse, ClientError> {
+        let url = self.endpoint("product_list_items");
+        let body = ProductListItemCreateRequest {
+            product_id,
+            product_list_id,
+        };
+
+        tracing::debug!(method = "POST", url = %url, "SDK request");
+        let response = self
+            .http
+            .post(&url)
+            .header("Authorization", self.auth_header())
+            .json(&body)
+            .send()
+            .await?;
+        tracing::debug!(url = %url, status = response.status().as_u16(), "SDK response");
+
+        self.decode_response(&url, response).await
+    }
+
+    /// Removes a product list item by its own id (not the product's id).
+    ///
+    /// Maps to `DELETE /{api_version}/product_list_items/{product_list_item_id}`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails.
+    pub async fn delete_product_list_item(
+        &self,
+        product_list_item_id: u64,
+    ) -> Result<(), ClientError> {
+        let url = self.endpoint(&format!("product_list_items/{product_list_item_id}"));
+
+        tracing::debug!(method = "DELETE", url = %url, "SDK request");
+        let response = self
+            .http
+            .delete(&url)
+            .header("Authorization", self.auth_header())
+            .send()
+            .await?;
+        tracing::debug!(url = %url, status = response.status().as_u16(), "SDK response");
+
+        response
+            .error_for_status()
+            .map(|_| ())
+            .map_err(ClientError::Http)
+    }
+}
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use wiremock::matchers::{body_json, method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    use super::*;
+
+    fn client_for(server: &MockServer) -> LibraryClient {
+        let config = Config::with_base_url("test-app-key", server.uri());
+        LibraryClient::new(config, "test-token".to_string())
+    }
+
+    #[tokio::test]
+    async fn add_product_list_item_returns_created_item() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/vBeta/product_list_items"))
+            .and(body_json(serde_json::json!({
+                "productId": 515_276,
+                "productListId": 86_151,
+            })))
+            .respond_with(ResponseTemplate::new(201).set_body_json(serde_json::json!({
+                "productId": 515_276,
+                "productListId": 86_151,
+                "productListItemId": 2_629_321,
+            })))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = client_for(&server);
+        let result = client.add_product_list_item(86_151, 515_276).await.unwrap();
+
+        assert_eq!(result.product_id, 515_276);
+        assert_eq!(result.product_list_id, 86_151);
+        assert_eq!(result.product_list_item_id, 2_629_321);
+    }
+
+    #[tokio::test]
+    async fn add_product_list_item_returns_http_error_on_failure_status() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/vBeta/product_list_items"))
+            .respond_with(ResponseTemplate::new(404))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = client_for(&server);
+        let result = client.add_product_list_item(86_151, 515_276).await;
+
+        assert!(matches!(
+            result,
+            Err(ClientError::DecodeFailed { status: 404, .. })
+        ));
+    }
+
+    #[tokio::test]
+    async fn delete_product_list_item_succeeds_on_no_content() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("DELETE"))
+            .and(path("/vBeta/product_list_items/2629321"))
+            .respond_with(ResponseTemplate::new(204))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = client_for(&server);
+        let result = client.delete_product_list_item(2_629_321).await;
+
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn delete_product_list_item_returns_http_error_on_failure_status() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("DELETE"))
+            .and(path("/vBeta/product_list_items/2629321"))
+            .respond_with(ResponseTemplate::new(404))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = client_for(&server);
+        let result = client.delete_product_list_item(2_629_321).await;
+
+        assert!(matches!(result, Err(ClientError::Http(_))));
     }
 }
