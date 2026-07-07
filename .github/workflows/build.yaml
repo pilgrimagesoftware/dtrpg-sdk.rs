@@ -83,10 +83,17 @@ jobs:
           show-progress: true
           submodules: recursive
 
+      - name: Generate a token
+        id: generate_token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Cargo release
         id: cargo_release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           cargo install --quiet cargo-smart-release
           git config --global user.email "ci@pilgrimagesoftware.com"
