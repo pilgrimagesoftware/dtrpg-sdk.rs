@@ -22,7 +22,9 @@ jobs:
           submodules: recursive
 
       - name: Install git-cliff
-        uses: taiki-e/install-action@git-cliff
+        uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
 
       - name: Install cargo-edit
         uses: taiki-e/install-action@v2
@@ -45,6 +47,8 @@ jobs:
 
       - name: Open release PR
         uses: peter-evans/create-pull-request@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           branch: release/${{ steps.version.outputs.version }}
           base: master
