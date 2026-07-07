@@ -12,7 +12,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  GIT_AUTHOR_IDENT: "Pilgrimage Software <ci@pilgrimagesoftware.com>"
 
 permissions:
   contents: write
@@ -90,6 +89,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cargo install --quiet cargo-smart-release
+          git config --global user.email "ci@pilgrimagesoftware.com"
+          git config --global user.name "Pilgrimage Software CI"
           cargo smart-release \
             --bump auto \
             --update-crates-index \
