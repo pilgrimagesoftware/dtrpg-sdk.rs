@@ -86,7 +86,7 @@ jobs:
       - name: Cargo release
         id: cargo_release
         env:
-          GIT_AUTHOR_IDENT: ${{ github.actor }}
+          GIT_AUTHOR_IDENT: "Pilgrimage Software <ci@pilgrimagesoftware.com>"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cargo install --quiet cargo-smart-release
