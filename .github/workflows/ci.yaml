@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [develop]
+
+concurrency: ci
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          show-progress: true
+          submodules: recursive
+
+      - name: Install Rust
+        id: install_rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Setup Rust cache
+        id: rust_cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check formatting
+        id: check_fmt
+        run: |
+          cargo fmt --check
+
+      - name: Clippy
+        id: clippy
+        run: |
+          cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Test
+        id: test
+        run: |
+          cargo test --all-features

@@ -18,6 +18,8 @@ permissions:
   pages: write
   id-token: write
 
+concurrency: ci
+
 jobs:
   build:
     name: Build/test on ${{ matrix.name }}
@@ -105,5 +107,6 @@ jobs:
             --allow-fully-generated-changelogs \
             --signoff \
             --no-publish \
+            --no-changelog-preview \
             --commit-prefix "chore: release [skip ci]" \
             --execute
