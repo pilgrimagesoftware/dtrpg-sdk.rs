@@ -69,8 +69,17 @@ jobs:
           command: test
           args: --verbose --release --target ${{ matrix.target }}
 
+  release:
+    name: Release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
       - name: Cargo release
         id: cargo_release
+        env:
+          GIT_AUTHOR_IDENT: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cargo install --quiet cargo-smart-release
           cargo smart-release \
