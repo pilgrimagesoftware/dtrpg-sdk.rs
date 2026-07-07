@@ -141,7 +141,7 @@ jobs:
         id: cargo_release
         if: github.ref == 'refs/heads/develop'
         run: |
-          cargo install cargo-smart-release
+          cargo install --quiet cargo-smart-release
           cargo smart-release \
             --bump auto \
             --allow-fully-generated-changelogs \
