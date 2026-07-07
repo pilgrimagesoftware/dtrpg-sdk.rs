@@ -12,6 +12,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  GIT_AUTHOR_IDENT: "Pilgrimage Software <ci@pilgrimagesoftware.com>"
 
 permissions:
   contents: write
@@ -86,7 +87,6 @@ jobs:
       - name: Cargo release
         id: cargo_release
         env:
-          GIT_AUTHOR_IDENT: "Pilgrimage Software <ci@pilgrimagesoftware.com>"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cargo install --quiet cargo-smart-release
