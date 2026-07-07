@@ -7,11 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.0.30 (2026-07-07)
 
+<csr-id-3cce9fdd202db15f3b19b72d51d890d4c2e3ac91/>
+<csr-id-b1af428bbe1716f92b1cd054e38fc907b8d52240/>
+<csr-id-2b234d0faa7078d21c8352f52cda89f7fa89e60c/>
+
 ### Chore
 
  - <csr-id-3cce9fdd202db15f3b19b72d51d890d4c2e3ac91/> update release job in CI workflow to include checkout step and modify cargo release command
  - <csr-id-b1af428bbe1716f92b1cd054e38fc907b8d52240/> simplify build workflow by removing release steps and renaming job
  - <csr-id-2b234d0faa7078d21c8352f52cda89f7fa89e60c/> update version to 0.0.30 in Cargo.toml and Cargo.lock
+
+### Chore
+
+ - <csr-id-a1af10e29a7884f817a91b0f6885adfccc656e23/> release [skip ci] Bump dtrpg-sdk v0.0.30
 
 ### New Features
 
@@ -27,13 +35,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-4cd4625d0e51cb95fdc9a3ef87d6c1001497d216/> move GIT_AUTHOR_IDENT to env section for consistency in CI workflow
  - <csr-id-39ec37578c3c6edcbe1439320209cab98f91d7c0/> update GIT_AUTHOR_IDENT to use a fixed author name for cargo release
  - <csr-id-19a0e2166c64961a3523d1a56ebc09665c5a9ebc/> run cargo install quietly in CI workflow
+ - <csr-id-f42009279582c0679fe45f8375a7cdc2eb9d4490/> set GITHUB_TOKEN for Cargo release step
 
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 12 commits contributed to the release.
- - 12 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 14 commits contributed to the release.
+ - 14 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -43,6 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Set GITHUB_TOKEN for Cargo release step ([`f420092`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/f42009279582c0679fe45f8375a7cdc2eb9d4490))
+    - Release [skip ci] Bump dtrpg-sdk v0.0.30 ([`a1af10e`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/a1af10e29a7884f817a91b0f6885adfccc656e23))
     - Add token generation step for GitHub App in release workflow ([`fdae5c4`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/fdae5c4330f143502737e474042d0221d1867071))
     - Update GitHub App token credentials in build workflow ([`ef0216d`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/ef0216d63773b5c6d1f18e93eeeb7ef11c1fce78))
     - Update Cargo release step to use generated GitHub token for authentication ([`81f4ae7`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/81f4ae76719e530a9563b0eba83f3add2c1123af))
