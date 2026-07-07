@@ -93,6 +93,8 @@ jobs:
 
       - name: Cargo release
         id: cargo_release
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           cargo install --quiet cargo-smart-release
           git config --global user.email "ci@pilgrimagesoftware.com"
