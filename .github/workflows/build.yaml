@@ -97,5 +97,5 @@ jobs:
             --allow-fully-generated-changelogs \
             --signoff \
             --no-publish \
-            --commit-prefix "chore: release [skip ci]"
+            --commit-prefix "chore: release [skip ci]" \
             --execute
