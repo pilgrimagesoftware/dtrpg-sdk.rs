@@ -10,12 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <csr-id-3cce9fdd202db15f3b19b72d51d890d4c2e3ac91/>
 <csr-id-b1af428bbe1716f92b1cd054e38fc907b8d52240/>
 <csr-id-2b234d0faa7078d21c8352f52cda89f7fa89e60c/>
+<csr-id-a1af10e29a7884f817a91b0f6885adfccc656e23/>
 
 ### Chore
 
  - <csr-id-3cce9fdd202db15f3b19b72d51d890d4c2e3ac91/> update release job in CI workflow to include checkout step and modify cargo release command
  - <csr-id-b1af428bbe1716f92b1cd054e38fc907b8d52240/> simplify build workflow by removing release steps and renaming job
  - <csr-id-2b234d0faa7078d21c8352f52cda89f7fa89e60c/> update version to 0.0.30 in Cargo.toml and Cargo.lock
+
+### Chore
+
+ - <csr-id-8b25d2ecd51232369b340e955e706237332b749c/> release [skip ci] Bump dtrpg-sdk v0.0.30
+ - <csr-id-a826d5886828f907a8dad447d0adf89be9d34f71/> update version to 0.0.29 and adjust CI workflow for semantic release
 
 ### Chore
 
@@ -36,13 +42,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-39ec37578c3c6edcbe1439320209cab98f91d7c0/> update GIT_AUTHOR_IDENT to use a fixed author name for cargo release
  - <csr-id-19a0e2166c64961a3523d1a56ebc09665c5a9ebc/> run cargo install quietly in CI workflow
  - <csr-id-f42009279582c0679fe45f8375a7cdc2eb9d4490/> set GITHUB_TOKEN for Cargo release step
+ - <csr-id-e351dfc942379d97abde79cd535e4226cf668834/> name
 
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 14 commits contributed to the release.
- - 14 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 18 commits contributed to the release.
+ - 17 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -52,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release [skip ci] Bump dtrpg-sdk v0.0.30 ([`8b25d2e`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/8b25d2ecd51232369b340e955e706237332b749c))
     - Set GITHUB_TOKEN for Cargo release step ([`f420092`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/f42009279582c0679fe45f8375a7cdc2eb9d4490))
     - Release [skip ci] Bump dtrpg-sdk v0.0.30 ([`a1af10e`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/a1af10e29a7884f817a91b0f6885adfccc656e23))
     - Add token generation step for GitHub App in release workflow ([`fdae5c4`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/fdae5c4330f143502737e474042d0221d1867071))
@@ -66,6 +74,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Simplify build workflow by removing release steps and renaming job ([`b1af428`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/b1af428bbe1716f92b1cd054e38fc907b8d52240))
     - Run cargo install quietly in CI workflow ([`19a0e21`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/19a0e2166c64961a3523d1a56ebc09665c5a9ebc))
     - Update version to 0.0.30 in Cargo.toml and Cargo.lock ([`2b234d0`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/2b234d0faa7078d21c8352f52cda89f7fa89e60c))
+    - Release dtrpg-sdk v0.0.29 ([`6d00b33`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/6d00b3308858391b4fa286cd2537d23e13cb6201))
+    - Name ([`e351dfc`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/e351dfc942379d97abde79cd535e4226cf668834))
+    - Update version to 0.0.29 and adjust CI workflow for semantic release ([`a826d58`](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/commit/a826d5886828f907a8dad447d0adf89be9d34f71))
 </details>
 
 ## v0.0.29 (2026-07-07)
