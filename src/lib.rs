@@ -57,8 +57,9 @@ pub use library::{
     OrderProductInfo, OrderProductItem, OrderProductItemResponse, OrderProductListResponse,
     OrderProductOrder, OrderProductPublisher, OrderProductRelationships, PageParams,
     PaginationLinks, PaginationMeta, ProductListAttributes, ProductListCollectionResponse,
-    ProductListItem, ProductListItemsResponse, PublisherAttributes, PublisherItem,
-    RelationshipData, RelationshipRef,
+    ProductListItem, ProductListItemCreateRequest, ProductListItemCreateResponse,
+    ProductListItemsResponse, PublisherAttributes, PublisherItem, RelationshipData,
+    RelationshipRef,
 };
 pub use openapi::{OPERATIONS, OpenApiOperation};
 pub use sdk::DriveThruRpgSdk;
