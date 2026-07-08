@@ -4,18 +4,18 @@
 //! It wraps the two website login endpoints that DriveThruRPG's own login page
 //! uses to turn an email/password pair into an application key.
 //!
-//! This is distinct from [`auth_client`], which exchanges an application key for
+//! This is distinct from [`key_exchange`], which exchanges an application key for
 //! a short-lived JWT against `api.drivethrurpg.com`. [`login_with_credentials`]
-//! produces the application key that [`auth_client::authenticate`] then exchanges
+//! produces the application key that [`key_exchange::authenticate`] then exchanges
 //! for a session token; the two modules are complementary, not overlapping.
-//! `auth_client::authenticate` is unaffected by this module.
+//! `key_exchange::authenticate` is unaffected by this module.
 //!
-//! [`auth_client`]: crate::auth_client
-//! [`auth_client::authenticate`]: crate::auth_client::authenticate
+//! [`key_exchange`]: crate::auth::key_exchange
+//! [`key_exchange::authenticate`]: crate::auth::key_exchange::authenticate
 
 use serde::Deserialize;
 
-use crate::{client::ClientError, config::Config};
+use crate::{config::Config, library::ClientError};
 
 /// Base URL for the DriveThruRPG website login endpoints.
 const WEBSITE_BASE_URL: &str = "https://www.drivethrurpg.com";
@@ -120,7 +120,7 @@ struct CreateAccountAppMessage {
 /// # Examples
 ///
 /// ```rust,no_run
-/// use dtrpg_sdk::{Config, credential_login};
+/// use dtrpg_sdk::{Config, auth::credential_login};
 ///
 /// async fn get_key() -> Result<String, dtrpg_sdk::ClientError> {
 ///     let config = Config::new("placeholder");

@@ -6,7 +6,7 @@
 //!
 //! [`AuthSession`]: crate::AuthSession
 
-use crate::{auth::AuthTokenResponse, client::ClientError, config::Config};
+use crate::{auth::AuthTokenResponse, config::Config, library::ClientError};
 
 /// Maximum number of bytes logged from a failing auth response body.
 const LOG_PAYLOAD_LIMIT: usize = 2_000;

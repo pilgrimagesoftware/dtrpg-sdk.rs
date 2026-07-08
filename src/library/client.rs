@@ -11,15 +11,12 @@
 //!
 //! [`DriveThruRpgSdk::library_client`]: crate::DriveThruRpgSdk::library_client
 
-use crate::{
-    config::Config,
-    error::SdkError,
-    library::{
-        LibraryItemsParams, OrderProductItemResponse, OrderProductListResponse, PageParams,
-        ProductListCollectionResponse, ProductListItem, ProductListItemCreateRequest,
-        ProductListItemCreateResponse, ProductListItemsResponse,
-    },
+use super::models::{
+    LibraryItemsParams, OrderProductItemResponse, OrderProductListResponse, PageParams,
+    ProductListCollectionResponse, ProductListItem, ProductListItemCreateRequest,
+    ProductListItemCreateResponse, ProductListItemsResponse,
 };
+use crate::{config::Config, error::SdkError};
 
 /// Maximum number of bytes logged from a failing response body.
 const LOG_PAYLOAD_LIMIT: usize = 2_000;
@@ -47,14 +44,14 @@ pub enum ClientError {
     /// Returned by [`credential_login::login_with_credentials`] when
     /// `validate_login_credentials.php` indicates the credentials are invalid.
     ///
-    /// [`credential_login::login_with_credentials`]: crate::credential_login::login_with_credentials
+    /// [`credential_login::login_with_credentials`]: crate::auth::credential_login::login_with_credentials
     InvalidCredentials,
     /// Credentials were accepted but the application key request failed.
     ///
     /// Returned by [`credential_login::login_with_credentials`] when credentials
     /// pass validation but `create_account_app.php` returns a non-success status.
     ///
-    /// [`credential_login::login_with_credentials`]: crate::credential_login::login_with_credentials
+    /// [`credential_login::login_with_credentials`]: crate::auth::credential_login::login_with_credentials
     ApplicationKeyRequestFailed {
         /// The status string returned by `create_account_app.php`.
         status: String,
