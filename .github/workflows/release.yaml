@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to (re-)run the release for, e.g. v0.1.0"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -16,10 +22,16 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
+      - name: Resolve tag
+        id: resolve_tag
+        run: |
+          echo "tag=${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
+
       - name: Checkout
         id: checkout
         uses: actions/checkout@v7
         with:
+          ref: ${{ steps.resolve_tag.outputs.tag }}
           fetch-depth: 0 # full history required for git-cliff
           fetch-tags: true
           show-progress: true
