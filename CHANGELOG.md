@@ -2,6 +2,18 @@
 
 ### Added
 
+- Add automated release tagging workflow
+
+
+### Documentation
+
+- Wrap text in release documentation
+
+
+# CHANGELOG.md
+
+### Added
+
 - Add Rust SDK specifications for authentication and session management
 
 - Implement authentication and session management in Rust SDK
