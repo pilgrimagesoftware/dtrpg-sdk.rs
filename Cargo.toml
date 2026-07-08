@@ -3,12 +3,14 @@ name = "dtrpg-sdk"
 description = "A Rust SDK for DTRPG API"
 version = "0.0.1"
 edition = "2024"
+rust-version = "1.95.0"
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/pilgrimagesoftware/dtrpg-sdk.rs"
 homepage = "https://github.com/pilgrimagesoftware/dtrpg-sdk.rs"
+documentation = "https://docs.rs/dtrpg-sdk"
 keywords = ["dtrpg", "api", "sdk"]
-categories = ["api-bindings"]
+categories = ["api-bindings", "web-programming::http-client"]
 authors = ["Paul Schifferer <paul@schifferers.net>"]
 exclude = [
     "*.orig",
