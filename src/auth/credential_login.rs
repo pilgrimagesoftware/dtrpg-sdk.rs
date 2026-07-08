@@ -117,6 +117,14 @@ struct CreateAccountAppMessage {
 ///   but `create_account_app.php` returns a non-success status.
 /// - [`ClientError::DecodeFailed`] if a response body cannot be parsed.
 ///
+/// `config` is currently unused: this function always targets `www.drivethrurpg.com`,
+/// since the website login endpoints live on a separate origin from the
+/// `api.drivethrurpg.com` endpoint that [`Config`] describes. It is kept in the
+/// signature for symmetry with [`key_exchange::authenticate`] and to leave room for a
+/// configurable website origin later without a breaking API change.
+///
+/// [`key_exchange::authenticate`]: crate::auth::key_exchange::authenticate
+///
 /// # Examples
 ///
 /// ```rust,no_run

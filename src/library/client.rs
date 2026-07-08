@@ -223,6 +223,24 @@ impl LibraryClient {
     /// # Errors
     ///
     /// Returns [`ClientError::Http`] on any transport or deserialization failure.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use dtrpg_sdk::{Config, DriveThruRpgSdk, AuthTokenResponse, LibraryItemsParams};
+    /// # async fn run() -> Result<(), dtrpg_sdk::ClientError> {
+    /// # let mut sdk = DriveThruRpgSdk::with_config(Config::new("app-key"));
+    /// # sdk.apply_auth_response(AuthTokenResponse::new("t", "r", 9_999_999_999)).unwrap();
+    /// let client = sdk.library_client().unwrap();
+    /// let params = LibraryItemsParams {
+    ///     page: Some(1),
+    ///     page_size: Some(25),
+    ///     ..Default::default()
+    /// };
+    /// let products = client.list_order_products(params).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn list_order_products(
         &self,
         params: LibraryItemsParams,
@@ -275,6 +293,19 @@ impl LibraryClient {
     /// # Errors
     ///
     /// Returns [`ClientError::Http`] on any transport or deserialization failure.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use dtrpg_sdk::{Config, DriveThruRpgSdk, AuthTokenResponse};
+    /// # async fn run() -> Result<(), dtrpg_sdk::ClientError> {
+    /// # let mut sdk = DriveThruRpgSdk::with_config(Config::new("app-key"));
+    /// # sdk.apply_auth_response(AuthTokenResponse::new("t", "r", 9_999_999_999)).unwrap();
+    /// let client = sdk.library_client().unwrap();
+    /// let product = client.get_order_product(515_276).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn get_order_product(
         &self,
         order_product_id: u64,
@@ -306,6 +337,19 @@ impl LibraryClient {
     /// # Errors
     ///
     /// Returns [`ClientError::Http`] on any transport or deserialization failure.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use dtrpg_sdk::{Config, DriveThruRpgSdk, AuthTokenResponse};
+    /// # async fn run() -> Result<(), dtrpg_sdk::ClientError> {
+    /// # let mut sdk = DriveThruRpgSdk::with_config(Config::new("app-key"));
+    /// # sdk.apply_auth_response(AuthTokenResponse::new("t", "r", 9_999_999_999)).unwrap();
+    /// let client = sdk.library_client().unwrap();
+    /// let download = client.prepare_download(515_276).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn prepare_download(
         &self,
         order_product_id: u64,
@@ -336,6 +380,19 @@ impl LibraryClient {
     /// # Errors
     ///
     /// Returns [`ClientError::Http`] on any transport or deserialization failure.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use dtrpg_sdk::{Config, DriveThruRpgSdk, AuthTokenResponse, PageParams};
+    /// # async fn run() -> Result<(), dtrpg_sdk::ClientError> {
+    /// # let mut sdk = DriveThruRpgSdk::with_config(Config::new("app-key"));
+    /// # sdk.apply_auth_response(AuthTokenResponse::new("t", "r", 9_999_999_999)).unwrap();
+    /// let client = sdk.library_client().unwrap();
+    /// let lists = client.list_product_lists(PageParams::default()).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn list_product_lists(
         &self,
         params: PageParams,
@@ -374,6 +431,19 @@ impl LibraryClient {
     /// # Errors
     ///
     /// Returns [`ClientError::Http`] on any transport or deserialization failure.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use dtrpg_sdk::{Config, DriveThruRpgSdk, AuthTokenResponse, PageParams};
+    /// # async fn run() -> Result<(), dtrpg_sdk::ClientError> {
+    /// # let mut sdk = DriveThruRpgSdk::with_config(Config::new("app-key"));
+    /// # sdk.apply_auth_response(AuthTokenResponse::new("t", "r", 9_999_999_999)).unwrap();
+    /// let client = sdk.library_client().unwrap();
+    /// let items = client.list_product_list_items(86_151, PageParams::default()).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn list_product_list_items(
         &self,
         product_list_id: u64,
@@ -411,6 +481,19 @@ impl LibraryClient {
     ///
     /// Returns [`ClientError::Http`] on transport failure or [`ClientError::DecodeFailed`]
     /// if the response cannot be deserialized.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use dtrpg_sdk::{Config, DriveThruRpgSdk, AuthTokenResponse};
+    /// # async fn run() -> Result<(), dtrpg_sdk::ClientError> {
+    /// # let mut sdk = DriveThruRpgSdk::with_config(Config::new("app-key"));
+    /// # sdk.apply_auth_response(AuthTokenResponse::new("t", "r", 9_999_999_999)).unwrap();
+    /// let client = sdk.library_client().unwrap();
+    /// let list = client.create_product_list("Wishlist").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn create_product_list(&self, name: &str) -> Result<ProductListItem, ClientError> {
         let url = self.endpoint("product_lists");
 
@@ -432,6 +515,19 @@ impl LibraryClient {
     /// # Errors
     ///
     /// Returns [`ClientError`] if the request fails.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use dtrpg_sdk::{Config, DriveThruRpgSdk, AuthTokenResponse};
+    /// # async fn run() -> Result<(), dtrpg_sdk::ClientError> {
+    /// # let mut sdk = DriveThruRpgSdk::with_config(Config::new("app-key"));
+    /// # sdk.apply_auth_response(AuthTokenResponse::new("t", "r", 9_999_999_999)).unwrap();
+    /// let client = sdk.library_client().unwrap();
+    /// client.delete_product_list(86_151).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn delete_product_list(&self, id: u64) -> Result<(), ClientError> {
         let url = self.endpoint(&format!("product_lists/{id}"));
 
@@ -458,6 +554,19 @@ impl LibraryClient {
     ///
     /// Returns [`ClientError::Http`] on transport failure or [`ClientError::DecodeFailed`]
     /// if the response cannot be deserialized.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use dtrpg_sdk::{Config, DriveThruRpgSdk, AuthTokenResponse};
+    /// # async fn run() -> Result<(), dtrpg_sdk::ClientError> {
+    /// # let mut sdk = DriveThruRpgSdk::with_config(Config::new("app-key"));
+    /// # sdk.apply_auth_response(AuthTokenResponse::new("t", "r", 9_999_999_999)).unwrap();
+    /// let client = sdk.library_client().unwrap();
+    /// let item = client.add_product_list_item(86_151, 515_276).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn add_product_list_item(
         &self,
         product_list_id: u64,
@@ -489,6 +598,19 @@ impl LibraryClient {
     /// # Errors
     ///
     /// Returns [`ClientError`] if the request fails.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use dtrpg_sdk::{Config, DriveThruRpgSdk, AuthTokenResponse};
+    /// # async fn run() -> Result<(), dtrpg_sdk::ClientError> {
+    /// # let mut sdk = DriveThruRpgSdk::with_config(Config::new("app-key"));
+    /// # sdk.apply_auth_response(AuthTokenResponse::new("t", "r", 9_999_999_999)).unwrap();
+    /// let client = sdk.library_client().unwrap();
+    /// client.delete_product_list_item(2_629_321).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn delete_product_list_item(
         &self,
         product_list_item_id: u64,

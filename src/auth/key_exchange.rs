@@ -20,6 +20,18 @@ const LOG_PAYLOAD_LIMIT: usize = 2_000;
 ///
 /// Returns [`ClientError::Http`] on transport or server errors.
 /// Returns [`ClientError::DecodeFailed`] if the response body cannot be parsed.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// # use dtrpg_sdk::{Config, auth::key_exchange};
+/// # async fn run() -> Result<(), dtrpg_sdk::ClientError> {
+/// let config = Config::new("my-app-key");
+/// let response = key_exchange::authenticate("my-app-key", &config).await?;
+/// println!("access token: {}", response.token);
+/// # Ok(())
+/// # }
+/// ```
 pub async fn authenticate(
     api_key: &str,
     config: &Config,
@@ -31,6 +43,9 @@ pub async fn authenticate(
     let response = http
         .post(&url)
         .query(&[("applicationKey", api_key)])
+        // The application key is passed as a query parameter, not in the body, but
+        // `openapi.yaml` still declares an `application/json` requestBody for this
+        // endpoint; send an empty object so the Content-Type matches the spec.
         .json(&serde_json::json!({}))
         .send()
         .await?;
