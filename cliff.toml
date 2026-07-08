@@ -3,9 +3,8 @@ header = ""
 body = """
 {% for group, commits in commits | group_by(attribute="group") %}
 ### {{ group | upper_first }}
-{% for commit in commits %}
-- {{ commit.message | upper_first }}\
-  {% if commit.breaking %} **[BREAKING]**{% endif %}
+{% for commit in commits -%}
+- {{ commit.message | upper_first }}{% if commit.breaking %} **[BREAKING]**{% endif %}
 {% endfor %}
 {% endfor %}\n
 """
