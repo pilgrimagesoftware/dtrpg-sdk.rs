@@ -15,6 +15,13 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     steps:
+      - name: Generate token
+        id: psw_ci_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.PSW_CI_APP_ID }}
+          private-key: ${{ secrets.PSW_CI_PRIVATE_KEY }}
+
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # full history required for git-cliff
@@ -48,12 +55,34 @@ jobs:
           git-cliff --tag v${{ steps.version.outputs.version }} --unreleased --prepend CHANGELOG.md
 
       - name: Open release PR
+        id: create_pull_request
         uses: peter-evans/create-pull-request@v8
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.psw_ci_token.outputs.token }}
           sign-commits: true
           branch: release/${{ steps.version.outputs.version }}
           base: master
           title: "Release ${{ steps.version.outputs.version }}"
           commit-message: "chore(release): ${{ steps.version.outputs.version }}"
           body: "Automated release PR. Review the changelog and Cargo.toml version before merging."
+          labels: release
+          assignees: psw-ci
+          reviewers: paulyhedral
+
+      - name: Verify a release PR was created or updated
+        if: steps.create_pull_request.outputs.pull-request-operation == ''
+        run: |
+          echo "::error::No pull request was created or updated for branch release/${{ steps.version.outputs.version }}."
+          echo "::error::git-cliff computed the next version as ${{ steps.version.outputs.version }}, but there was nothing new to commit — Cargo.toml, CHANGELOG.md, and the release/${{ steps.version.outputs.version }} branch (if it already exists) already match what this run would have produced."
+          echo "::error::Likely causes: (1) no new conventional commits (feat:/fix:/etc.) have landed since the last release, so there is nothing to release; or (2) no git tag exists yet for a prior release, so git-cliff cannot compute a version relative to history and keeps recomputing the same fallback version on every run (see 'Determine next version' step output above)."
+          echo "::error::If (2), a git tag needs to be created for the most recent release before this workflow can advance past ${{ steps.version.outputs.version }}."
+          exit 1
+
+      - name: Add PR to DriveThruRPG project
+        id: add_pr_to_project
+        env:
+          GH_TOKEN: ${{ steps.psw_ci_token.outputs.token }}
+        run: |
+          gh project item-add 8 \
+            --owner pilgrimagesoftware \
+            --url ${{ steps.create_pull_request.outputs.pull-request-url }}
