@@ -48,7 +48,7 @@ jobs:
           git-cliff --tag v${{ steps.version.outputs.version }} --unreleased --prepend CHANGELOG.md
 
       - name: Open release PR
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           sign-commits: true
