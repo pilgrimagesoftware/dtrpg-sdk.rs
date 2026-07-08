@@ -51,6 +51,7 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          sign-commits: true
           branch: release/${{ steps.version.outputs.version }}
           base: master
           title: "Release ${{ steps.version.outputs.version }}"
