@@ -15,6 +15,13 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     steps:
+      - name: Generate token
+        id: psw_ci_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.PSW_CI_APP_ID }}
+          private-key: ${{ secrets.PSW_CI_PRIVATE_KEY }}
+
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # full history required for git-cliff
@@ -48,12 +55,23 @@ jobs:
           git-cliff --tag v${{ steps.version.outputs.version }} --unreleased --prepend CHANGELOG.md
 
       - name: Open release PR
+        id: create_pull_request
         uses: peter-evans/create-pull-request@v8
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.psw_ci_token.outputs.token }}
           sign-commits: true
           branch: release/${{ steps.version.outputs.version }}
           base: master
           title: "Release ${{ steps.version.outputs.version }}"
           commit-message: "chore(release): ${{ steps.version.outputs.version }}"
           body: "Automated release PR. Review the changelog and Cargo.toml version before merging."
+          labels: release
+
+      - name: Add PR to DriveThruRPG project
+        id: add_pr_to_project
+        env:
+          GH_TOKEN: ${{ steps.psw_ci_token.outputs.token }}
+        run: |
+          gh project item-add 8 \
+            --owner pilgrimagesoftware \
+            --url ${{ steps.create_pull_request.outputs.pull-request-url }}
