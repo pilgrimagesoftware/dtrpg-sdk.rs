@@ -1,5 +1,13 @@
 # Release process
 
+## Summary
+
+1. Trigger the [**Prepare Release**](https://github.com/pilgrimagesoftware/dtrpg-sdk.rs/actions/workflows/prepare-release.yaml) workflow.
+1. Merge PR to `master`.
+1. Merge `master` into `develop`.
+
+## Breakdown
+
 Instead of manually bumping `Cargo.toml` and writing the changelog by hand on the release branch, a `prepare-release` workflow does it for you:
 
 ```sh
