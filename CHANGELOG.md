@@ -1,6 +1,26 @@
 
 
 ### Added
+- Better docs and examples, code reorg
+
+
+### Changed
+- Reorganize the code
+
+
+### Fixed
+- Bump version
+- Remove extra output line in changelog template
+- Prepare release error when it fails
+- Workflow authentication
+- Authenticate with crates.io
+- Authenticate with crates.io
+- Restore API submodule pointer to develop tip
+
+
+
+
+### Added
 - Add Rust SDK specifications for authentication and session management
 - Implement authentication and session management in Rust SDK
 - Add CI and PR validation workflows for Rust SDK
