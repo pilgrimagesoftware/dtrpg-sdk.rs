@@ -66,6 +66,8 @@ jobs:
           commit-message: "chore(release): ${{ steps.version.outputs.version }}"
           body: "Automated release PR. Review the changelog and Cargo.toml version before merging."
           labels: release
+          assignees: psw-ci
+          reviewers: paulyhedral
 
       - name: Verify a release PR was created or updated
         if: steps.create_pull_request.outputs.pull-request-operation == ''
