@@ -17,7 +17,6 @@ jobs:
       github.event.pull_request.merged == true &&
       startsWith(github.event.pull_request.head.ref, 'release/')
     runs-on: ubuntu-latest
-
     steps:
       - name: Validate release branch name
         id: version
@@ -42,7 +41,8 @@ jobs:
         env:
           TAG: v${{ steps.version.outputs.version }}
         run: |
-          git checkout master
+          git config --global user.email "ci@pilgrimagesoftware.com"
+          git config --global user.name "Pilgrimage Software CI"
           git pull
           git tag -a "$TAG" -m "Release ${{ steps.version.outputs.version }}"
           git push origin "$TAG"
