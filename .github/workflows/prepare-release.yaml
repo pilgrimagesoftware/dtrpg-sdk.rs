@@ -5,6 +5,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
   pages: write
   id-token: write
 
@@ -47,9 +48,10 @@ jobs:
           git-cliff --tag v${{ steps.version.outputs.version }} --unreleased --prepend CHANGELOG.md
 
       - name: Open release PR
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          sign-commits: true
           branch: release/${{ steps.version.outputs.version }}
           base: master
           title: "Release ${{ steps.version.outputs.version }}"
