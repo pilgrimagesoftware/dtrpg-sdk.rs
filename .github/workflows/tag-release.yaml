@@ -30,9 +30,17 @@ jobs:
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Generate token
+        id: psw_ci_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.PSW_CI_APP_ID }}
+          private-key: ${{ secrets.PSW_CI_PRIVATE_KEY }}
+
       - name: Checkout master
         uses: actions/checkout@v7
         with:
+          token: ${{ steps.psw_ci_token.outputs.token }}
           ref: master
           fetch-depth: 0
           fetch-tags: true
