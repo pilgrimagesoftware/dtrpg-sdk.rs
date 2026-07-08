@@ -3,7 +3,6 @@
 
 ### Fixed
 - Restore API submodule pointer to develop tip
-- Add version headings to changelog template
 
 
 ## 0.1.0 - 2026-07-08
@@ -15,7 +14,6 @@
 - Add debug workflow for GitHub Actions to manage versioning and changelog generation
 - Add Dependabot configuration for automated cargo updates
 - Rename CI and PR workflow files
-- Add issue templates for bug reports and feature requests
 - Add workflow for bumping version with SemVer options
 - Enhance CI workflow with cross-compilation and automated version bumping
 - Update package metadata in Cargo.toml for dtrpg-sdk
@@ -50,9 +48,6 @@
 - Update README.md with enhanced installation, quick start, and release process sections
 - Update project title in README.md to "DriveThruRPG SDK (Rust)"
 - Update vulnerability reporting policy
-- Add links to GitHub Actions workflows
-- Document release process steps
-- Wrap text in release documentation
 
 
 ### Fixed
@@ -62,7 +57,6 @@
 - Add permissions section for CI workflow
 - Reorder package step in CI workflow to allow dirty builds
 - Update CI workflow to fetch all tags and improve checkout step
-- Check out submodules
 - Auth header
 - Library
 - Remove invalid crates.io category slug

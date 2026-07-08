@@ -31,6 +31,8 @@ commit_parsers = [
   # "Fixed" -- CI/release tooling is internal maintenance, not SDK-facing.
   { message = "^\\w+\\(ci\\)", skip = true },
   { message = "^\\w+\\(internal\\)", skip = true },
+  { message = "^\\w+\\(dev\\)", skip = true },
+  { message = "^\\w+\\(release\\)", skip = true },
   { message = "^chore", skip = true },
   { message = "^ci", skip = true },
   { message = "^test", skip = true },
