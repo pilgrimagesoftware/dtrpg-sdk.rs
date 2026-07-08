@@ -2,8 +2,8 @@
 ## Unreleased
 
 ### Fixed
-- Authenticate with crates.io
 - Restore API submodule pointer to develop tip
+- Add version headings to changelog template
 
 
 ## 0.1.0 - 2026-07-08
@@ -34,15 +34,12 @@
 - Add product list item add/delete endpoints
 - Add release job to CI workflow for automated cargo releases
 - Add CI and release workflows with changelog configuration
-- Add automated release tagging workflow
 - Better docs and examples, code reorg
 
 
 ### Changed
 - Format code for consistency
-- Split build/release/publish into separate jobs
 - Update release workflow to use tags and simplify steps
-- Remove unused workflow files
 - Reorganize the code
 
 
@@ -68,17 +65,10 @@
 - Check out submodules
 - Auth header
 - Library
-- Stop cross-compiling the macOS matrix leg via Docker
-- Install the matrix target toolchain explicitly
-- Declare cross-compile targets in rust-toolchain.toml
-- Skip version bump/push on protected master branch
-- Write docs archive outside the checkout
 - Remove invalid crates.io category slug
 - Verify end-to-end workflow for crate release and address pre-existing bugs
-- Add GitHub authentication step for tagging on develop branch
 - Update subproject commit reference in API
 - Remove GitHub authentication step and use secret token for tagging
-- Exclude API/.github from crate packaging
 - Name
 - Run cargo install quietly in CI workflow
 - Update GIT_AUTHOR_IDENT to use a fixed author name for cargo release
@@ -94,9 +84,6 @@
 - Update prepare-release workflow to use correct token syntax and improve documentation
 - Bump version
 - Remove extra output line in changelog template
-- Prepare release error when it fails
-- Workflow authentication
-- Authenticate with crates.io
 
 
 ## 0.0.0 - 2026-01-19

@@ -23,20 +23,25 @@ split_commits = false
 # Map commit types to changelog groups, and set which types
 # count toward a "breaking"/major bump.
 commit_parsers = [
-  { message = "^feat", group = "Added" },
-  { message = "^fix", group = "Fixed" },
-  { message = "^perf", group = "Performance" },
-  { message = "^refactor", group = "Changed" },
-  { message = "^doc", group = "Documentation" },
-
-  # Excluded from the changelog entirely:
+  # Excluded from the changelog entirely. `scope = "..."` in a commit_parsers
+  # entry does NOT filter by the commit's scope -- it *assigns* one, the same
+  # way `group = "..."` does. Scope-based exclusion has to match the
+  # "type(scope): ..." prefix in `message` instead. These rules run before the
+  # type rules below, so e.g. `fix(ci): ...` is skipped rather than landing in
+  # "Fixed" -- CI/release tooling is internal maintenance, not SDK-facing.
+  { message = "^\\w+\\(ci\\)", skip = true },
+  { message = "^\\w+\\(internal\\)", skip = true },
   { message = "^chore", skip = true },
   { message = "^ci", skip = true },
   { message = "^test", skip = true },
   { message = "^style", skip = true },
   { message = "^build", skip = true },
 
-  { scope = "internal", skip = true },
+  { message = "^feat", group = "Added" },
+  { message = "^fix", group = "Fixed" },
+  { message = "^perf", group = "Performance" },
+  { message = "^refactor", group = "Changed" },
+  { message = "^doc", group = "Documentation" },
 ]
 
 # Exclude specific scopes regardless of type, e.g. internal tooling
