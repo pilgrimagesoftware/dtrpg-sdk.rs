@@ -5,6 +5,28 @@
 - Restore API submodule pointer to develop tip
 
 
+## 0.1.2 - 2026-07-09
+
+### Added
+- Better docs and examples, code reorg
+
+
+### Changed
+- Reorganize the code
+
+
+### Documentation
+- Change spec
+
+
+### Fixed
+- Bump version
+- Remove extra output line in changelog template
+- Restore API submodule pointer to develop tip
+- Surface real API error messages instead of decode failures
+- Decode the JSON:API envelope on product list create responses
+
+
 ## 0.1.0 - 2026-07-08
 
 ### Added
