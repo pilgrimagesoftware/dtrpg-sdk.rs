@@ -85,5 +85,5 @@ jobs:
           git config --global user.email "ci@pilgrimagesoftware.com"
           git config --global user.name "Pilgrimage Software CI"
           git checkout develop
-          git merge master
+          git merge origin/master
           git push origin develop
