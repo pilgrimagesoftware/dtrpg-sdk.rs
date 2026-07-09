@@ -143,12 +143,14 @@ impl std::error::Error for ClientError {
 
 /// Extracts a human-readable error message from a non-success JSON response body.
 ///
-/// Recognizes two shapes seen across DriveThruRPG API error responses: a
-/// top-level `message` string (e.g. [`AuthSessionError`]-style payloads), or a
-/// flat object keyed by field name whose values are a validation message string
-/// or an array of message strings (e.g. `{"productId": "Requires a valid
-/// Product ID. Invalid value 22654728."}`). Returns `None` if the body isn't
-/// JSON or matches neither shape, so the caller falls back to the raw payload.
+/// Recognizes three shapes seen across DriveThruRPG API error responses: a
+/// top-level `message` string (e.g. [`AuthSessionError`]-style payloads); a
+/// nested `{"error": {"message": "..."}}` object (e.g. `product_list_items`
+/// failures); or a flat object keyed by field name whose values are a
+/// validation message string or an array of message strings (e.g.
+/// `{"productId": "Requires a valid Product ID. Invalid value 22654728."}`).
+/// Returns `None` if the body isn't JSON or matches none of these shapes, so
+/// the caller falls back to the raw payload.
 ///
 /// [`AuthSessionError`]: https://github.com/pilgrimagesoftware/dtrpg-api
 fn extract_error_message(bytes: &[u8]) -> Option<String> {
@@ -156,6 +158,17 @@ fn extract_error_message(bytes: &[u8]) -> Option<String> {
     let obj = value.as_object()?;
 
     if let Some(message) = obj.get("message").and_then(serde_json::Value::as_str) {
+        return Some(message.to_string());
+    }
+
+    // `{"error": {"message": "...", "code": ..., "status": ...}}` — the shape used by
+    // e.g. `product_list_items` failures.
+    if let Some(message) = obj
+        .get("error")
+        .and_then(serde_json::Value::as_object)
+        .and_then(|error| error.get("message"))
+        .and_then(serde_json::Value::as_str)
+    {
         return Some(message.to_string());
     }
 
@@ -591,6 +604,11 @@ impl LibraryClient {
     /// # }
     /// ```
     pub async fn create_product_list(&self, name: &str) -> Result<ProductListItem, ClientError> {
+        #[derive(serde::Deserialize)]
+        struct ProductListEnvelope {
+            data: ProductListItem,
+        }
+
         let url = self.endpoint("product_lists");
 
         tracing::debug!(method = "POST", url = %url, "SDK request");
@@ -603,7 +621,8 @@ impl LibraryClient {
             .await?;
         tracing::debug!(url = %url, status = response.status().as_u16(), "SDK response");
 
-        self.decode_response(&url, response).await
+        let envelope: ProductListEnvelope = self.decode_response(&url, response).await?;
+        Ok(envelope.data)
     }
 
     /// Deletes a product list by id.
@@ -744,6 +763,41 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn create_product_list_decodes_json_api_envelope() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/vBeta/product_lists"))
+            .respond_with(ResponseTemplate::new(201).set_body_json(serde_json::json!({
+                "data": {
+                    "id": "/api/vBeta/product_lists/86267",
+                    "type": "ProductList",
+                    "attributes": {
+                        "customerId": 399_144,
+                        "name": "Testing",
+                        "dateCreated": "2026-07-09T00:42:39-05:00",
+                        "productListId": 86_267,
+                        "slug": "testing",
+                        "itemCount": 0,
+                    },
+                },
+            })))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = client_for(&server);
+        let result = client
+            .create_product_list("Testing")
+            .await
+            .expect("decode succeeds");
+
+        assert_eq!(result.id, "/api/vBeta/product_lists/86267");
+        assert_eq!(result.attributes.product_list_id, 86_267);
+        assert_eq!(result.attributes.name, "Testing");
+    }
+
+    #[tokio::test]
     async fn add_product_list_item_returns_created_item() {
         let server = MockServer::start().await;
 
@@ -754,9 +808,15 @@ mod tests {
                 "productListId": 86_151,
             })))
             .respond_with(ResponseTemplate::new(201).set_body_json(serde_json::json!({
-                "productId": 515_276,
-                "productListId": 86_151,
-                "productListItemId": 2_629_321,
+                "data": {
+                    "id": "/api/vBeta/product_list_items/2629321",
+                    "type": "ProductListItem",
+                    "attributes": {
+                        "productId": 515_276,
+                        "productListId": 86_151,
+                        "productListItemId": 2_629_321,
+                    },
+                },
             })))
             .expect(1)
             .mount(&server)
@@ -791,13 +851,18 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn add_product_list_item_surfaces_field_validation_message_on_conflict() {
+    async fn add_product_list_item_surfaces_validation_message_on_conflict() {
         let server = MockServer::start().await;
 
         Mock::given(method("POST"))
             .and(path("/vBeta/product_list_items"))
             .respond_with(ResponseTemplate::new(409).set_body_json(serde_json::json!({
-                "productId": "Requires a valid Product ID. Invalid value 22654728.",
+                "error": {
+                    "id": "6a4ee5880bfda",
+                    "message": "productId: Requires a valid Product ID. Invalid value 22654728.",
+                    "code": 409,
+                    "status": 409,
+                },
             })))
             .expect(1)
             .mount(&server)
@@ -818,6 +883,73 @@ mod tests {
             }
             other => panic!("expected ClientError::ApiError, got {other:?}"),
         }
+    }
+
+    #[tokio::test]
+    async fn add_product_list_item_surfaces_duplicate_membership_message_on_conflict() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/vBeta/product_list_items"))
+            .respond_with(ResponseTemplate::new(409).set_body_json(serde_json::json!({
+                "error": {
+                    "id": "6a4fc7a3b07db",
+                    "message": "This product already exists for this list.",
+                    "code": 409,
+                    "status": 409,
+                },
+            })))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = client_for(&server);
+        let result = client.add_product_list_item(86_151, 144_239).await;
+
+        match result {
+            Err(ClientError::ApiError {
+                status, message, ..
+            }) => {
+                assert_eq!(status, 409);
+                assert_eq!(
+                    message.as_deref(),
+                    Some("This product already exists for this list.")
+                );
+            }
+            other => panic!("expected ClientError::ApiError, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn add_product_list_item_decodes_json_api_envelope_on_success() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/vBeta/product_list_items"))
+            .respond_with(ResponseTemplate::new(201).set_body_json(serde_json::json!({
+                "data": {
+                    "id": "/api/vBeta/product_list_items/2634593",
+                    "type": "ProductListItem",
+                    "attributes": {
+                        "productId": 144_239,
+                        "productListId": 86_267,
+                        "productListItemId": 2_634_593,
+                    },
+                },
+            })))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = client_for(&server);
+        let result = client
+            .add_product_list_item(86_267, 144_239)
+            .await
+            .expect("decode succeeds");
+
+        assert_eq!(result.product_id, 144_239);
+        assert_eq!(result.product_list_id, 86_267);
+        assert_eq!(result.product_list_item_id, 2_634_593);
     }
 
     #[tokio::test]

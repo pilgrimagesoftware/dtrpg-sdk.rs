@@ -532,19 +532,51 @@ pub struct ProductListItemCreateRequest {
 
 /// The created product list item.
 ///
-/// Returned by `POST /{api_version}/product_list_items`.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+/// Returned by `POST /{api_version}/product_list_items`. The API wraps this resource
+/// in a JSON:API-style envelope on the wire (`{"data": {"id": ..., "type": ...,
+/// "attributes": {"productId": ..., "productListId": ..., "productListItemId": ...}}}`);
+/// [`Deserialize`] unwraps that envelope so callers work with a flat struct.
+#[derive(Clone, Debug, Serialize)]
 pub struct ProductListItemCreateResponse {
     /// Unique identifier of the product added to the list.
-    #[serde(rename = "productId")]
     pub product_id: u64,
     /// Unique identifier of the product list the product was added to.
-    #[serde(rename = "productListId")]
     pub product_list_id: u64,
     /// Unique identifier assigned to this product list item. Required to remove
     /// the item later via `DELETE /{api_version}/product_list_items/{id}`.
-    #[serde(rename = "productListItemId")]
     pub product_list_item_id: u64,
+}
+
+impl<'de> Deserialize<'de> for ProductListItemCreateResponse {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Attributes {
+            #[serde(rename = "productId")]
+            product_id: u64,
+            #[serde(rename = "productListId")]
+            product_list_id: u64,
+            #[serde(rename = "productListItemId")]
+            product_list_item_id: u64,
+        }
+        #[derive(Deserialize)]
+        struct Resource {
+            attributes: Attributes,
+        }
+        #[derive(Deserialize)]
+        struct Envelope {
+            data: Resource,
+        }
+
+        let envelope = Envelope::deserialize(deserializer)?;
+        Ok(Self {
+            product_id: envelope.data.attributes.product_id,
+            product_list_id: envelope.data.attributes.product_list_id,
+            product_list_item_id: envelope.data.attributes.product_list_item_id,
+        })
+    }
 }
 
 // ── Query parameter structs ───────────────────────────────────────────────────
