@@ -76,3 +76,14 @@ jobs:
         with:
           tag_name: ${{ steps.resolve_tag.outputs.tag }}
           body_path: RELEASE_NOTES.md
+
+      - name: Update develop from master
+        id: update_develop
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.email "ci@pilgrimagesoftware.com"
+          git config --global user.name "Pilgrimage Software CI"
+          git checkout develop
+          git merge master
+          git push origin develop
