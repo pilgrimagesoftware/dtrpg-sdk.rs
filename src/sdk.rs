@@ -138,9 +138,9 @@ impl DriveThruRpgSdk {
     /// [`SdkError::Unauthenticated`] if there is no active session.
     ///
     /// [`LibraryClient`]: crate::LibraryClient
-    pub fn library_client(&self) -> Result<crate::client::LibraryClient, crate::error::SdkError> {
+    pub fn library_client(&self) -> Result<crate::library::LibraryClient, crate::error::SdkError> {
         let config = self.require_config()?.clone();
         let token = self.require_session()?.token().to_string();
-        Ok(crate::client::LibraryClient::new(config, token))
+        Ok(crate::library::LibraryClient::new(config, token))
     }
 }

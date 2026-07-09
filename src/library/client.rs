@@ -11,15 +11,12 @@
 //!
 //! [`DriveThruRpgSdk::library_client`]: crate::DriveThruRpgSdk::library_client
 
-use crate::{
-    config::Config,
-    error::SdkError,
-    library::{
-        LibraryItemsParams, OrderProductItemResponse, OrderProductListResponse, PageParams,
-        ProductListCollectionResponse, ProductListItem, ProductListItemCreateRequest,
-        ProductListItemCreateResponse, ProductListItemsResponse,
-    },
+use super::models::{
+    LibraryItemsParams, OrderProductItemResponse, OrderProductListResponse, PageParams,
+    ProductListCollectionResponse, ProductListItem, ProductListItemCreateRequest,
+    ProductListItemCreateResponse, ProductListItemsResponse,
 };
+use crate::{config::Config, error::SdkError};
 
 /// Maximum number of bytes logged from a failing response body.
 const LOG_PAYLOAD_LIMIT: usize = 2_000;
@@ -47,19 +44,20 @@ pub enum ClientError {
     /// Returned by [`credential_login::login_with_credentials`] when
     /// `validate_login_credentials.php` indicates the credentials are invalid.
     ///
-    /// [`credential_login::login_with_credentials`]: crate::credential_login::login_with_credentials
+    /// [`credential_login::login_with_credentials`]: crate::auth::credential_login::login_with_credentials
     InvalidCredentials,
     /// Credentials were accepted but the application key request failed.
     ///
     /// Returned by [`credential_login::login_with_credentials`] when credentials
     /// pass validation but `create_account_app.php` returns a non-success status.
     ///
-    /// [`credential_login::login_with_credentials`]: crate::credential_login::login_with_credentials
+    /// [`credential_login::login_with_credentials`]: crate::auth::credential_login::login_with_credentials
     ApplicationKeyRequestFailed {
         /// The status string returned by `create_account_app.php`.
         status: String,
     },
-    /// The HTTP response was received but could not be deserialized.
+    /// The HTTP response indicated a successful status but the body could not be
+    /// deserialized into the expected type.
     ///
     /// The raw response body (truncated to [`LOG_PAYLOAD_LIMIT`] bytes) is preserved so
     /// callers can log the offending payload for diagnosis.
@@ -70,6 +68,23 @@ pub enum ClientError {
         status: u16,
         /// The deserialization error.
         cause: serde_json::Error,
+        /// Raw response body, UTF-8 lossy, truncated to [`LOG_PAYLOAD_LIMIT`] chars.
+        payload: String,
+    },
+    /// The API returned a non-success status. `message`, when present, is a
+    /// human-readable explanation extracted from the response body (either a
+    /// top-level `message` field or field-keyed validation errors, e.g.
+    /// `{"productId": "Requires a valid Product ID. Invalid value 22654728."}`).
+    ///
+    /// The raw response body (truncated to [`LOG_PAYLOAD_LIMIT`] bytes) is preserved so
+    /// callers can log the offending payload when no `message` could be extracted.
+    ApiError {
+        /// The URL that was requested.
+        url: String,
+        /// The HTTP status code of the response.
+        status: u16,
+        /// A human-readable message extracted from the response body, if any.
+        message: Option<String>,
         /// Raw response body, UTF-8 lossy, truncated to [`LOG_PAYLOAD_LIMIT`] chars.
         payload: String,
     },
@@ -101,6 +116,15 @@ impl core::fmt::Display for ClientError {
             } => {
                 write!(f, "response decode failed [{url}] (HTTP {status}): {cause}")
             }
+            Self::ApiError {
+                url,
+                status,
+                message,
+                payload,
+            } => {
+                let detail = message.as_deref().unwrap_or(payload.as_str());
+                write!(f, "API request failed [{url}] (HTTP {status}): {detail}")
+            }
         }
     }
 }
@@ -112,8 +136,56 @@ impl std::error::Error for ClientError {
             Self::Http(err) => Some(err),
             Self::InvalidCredentials | Self::ApplicationKeyRequestFailed { .. } => None,
             Self::DecodeFailed { cause, .. } => Some(cause),
+            Self::ApiError { .. } => None,
         }
     }
+}
+
+/// Extracts a human-readable error message from a non-success JSON response body.
+///
+/// Recognizes three shapes seen across DriveThruRPG API error responses: a
+/// top-level `message` string (e.g. [`AuthSessionError`]-style payloads); a
+/// nested `{"error": {"message": "..."}}` object (e.g. `product_list_items`
+/// failures); or a flat object keyed by field name whose values are a
+/// validation message string or an array of message strings (e.g.
+/// `{"productId": "Requires a valid Product ID. Invalid value 22654728."}`).
+/// Returns `None` if the body isn't JSON or matches none of these shapes, so
+/// the caller falls back to the raw payload.
+///
+/// [`AuthSessionError`]: https://github.com/pilgrimagesoftware/dtrpg-api
+fn extract_error_message(bytes: &[u8]) -> Option<String> {
+    let value: serde_json::Value = serde_json::from_slice(bytes).ok()?;
+    let obj = value.as_object()?;
+
+    if let Some(message) = obj.get("message").and_then(serde_json::Value::as_str) {
+        return Some(message.to_string());
+    }
+
+    // `{"error": {"message": "...", "code": ..., "status": ...}}` — the shape used by
+    // e.g. `product_list_items` failures.
+    if let Some(message) = obj
+        .get("error")
+        .and_then(serde_json::Value::as_object)
+        .and_then(|error| error.get("message"))
+        .and_then(serde_json::Value::as_str)
+    {
+        return Some(message.to_string());
+    }
+
+    let mut parts = Vec::new();
+    for (field, detail) in obj {
+        match detail {
+            serde_json::Value::String(message) => parts.push(format!("{field}: {message}")),
+            serde_json::Value::Array(messages) => {
+                for message in messages.iter().filter_map(serde_json::Value::as_str) {
+                    parts.push(format!("{field}: {message}"));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    (!parts.is_empty()).then(|| parts.join("; "))
 }
 
 // ── LibraryClient ─────────────────────────────────────────────────────────────
@@ -181,33 +253,67 @@ impl LibraryClient {
 
     /// Reads a response body and deserializes it as `T`.
     ///
-    /// On failure the raw payload is logged at ERROR level (truncated to
-    /// [`LOG_PAYLOAD_LIMIT`] bytes) and a [`ClientError::DecodeFailed`] is returned so
-    /// callers have both the serde cause and the offending payload for diagnosis.
+    /// A non-success status is treated as a request failure rather than a decode
+    /// attempt: the body is never deserialized as `T` in that case (`T` describes the
+    /// success schema, so trying to parse an error body against it produces a
+    /// confusing "missing field" decode error instead of the API's actual message).
+    /// Instead a human-readable message is extracted from the body — a top-level
+    /// `message` field, or field-keyed validation errors such as
+    /// `{"productId": "Requires a valid Product ID. Invalid value 22654728."}` — and
+    /// returned via [`ClientError::ApiError`].
+    ///
+    /// On a success status whose body still fails to deserialize as `T`, the raw
+    /// payload is logged at ERROR level (truncated to [`LOG_PAYLOAD_LIMIT`] bytes) and
+    /// a [`ClientError::DecodeFailed`] is returned so callers have both the serde
+    /// cause and the offending payload for diagnosis.
     async fn decode_response<T: serde::de::DeserializeOwned>(
         &self,
         url: &str,
         response: reqwest::Response,
     ) -> Result<T, ClientError> {
-        let status = response.status().as_u16();
+        let status = response.status();
+        let status_code = status.as_u16();
         let bytes = response.bytes().await.map_err(ClientError::Http)?;
-        serde_json::from_slice::<T>(&bytes).map_err(|cause| {
+
+        let truncated_payload = || -> String {
             let raw = String::from_utf8_lossy(&bytes);
-            let payload: String = if raw.len() > LOG_PAYLOAD_LIMIT {
+            if raw.len() > LOG_PAYLOAD_LIMIT {
                 format!("{}… (truncated)", &raw[..LOG_PAYLOAD_LIMIT])
             } else {
                 raw.into_owned()
-            };
+            }
+        };
+
+        if !status.is_success() {
+            let payload = truncated_payload();
+            let message = extract_error_message(&bytes);
             tracing::error!(
                 url = %url,
-                status = status,
+                status = status_code,
+                payload = %payload,
+                message = message.as_deref().unwrap_or(""),
+                "API request failed"
+            );
+            return Err(ClientError::ApiError {
+                url: url.to_string(),
+                status: status_code,
+                message,
+                payload,
+            });
+        }
+
+        serde_json::from_slice::<T>(&bytes).map_err(|cause| {
+            let payload = truncated_payload();
+            tracing::error!(
+                url = %url,
+                status = status_code,
                 payload = %payload,
                 error = %cause,
                 "API response decode failed"
             );
             ClientError::DecodeFailed {
                 url: url.to_string(),
-                status,
+                status: status_code,
                 cause,
                 payload,
             }
@@ -226,6 +332,24 @@ impl LibraryClient {
     /// # Errors
     ///
     /// Returns [`ClientError::Http`] on any transport or deserialization failure.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use dtrpg_sdk::{Config, DriveThruRpgSdk, AuthTokenResponse, LibraryItemsParams};
+    /// # async fn run() -> Result<(), dtrpg_sdk::ClientError> {
+    /// # let mut sdk = DriveThruRpgSdk::with_config(Config::new("app-key"));
+    /// # sdk.apply_auth_response(AuthTokenResponse::new("t", "r", 9_999_999_999)).unwrap();
+    /// let client = sdk.library_client().unwrap();
+    /// let params = LibraryItemsParams {
+    ///     page: Some(1),
+    ///     page_size: Some(25),
+    ///     ..Default::default()
+    /// };
+    /// let products = client.list_order_products(params).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn list_order_products(
         &self,
         params: LibraryItemsParams,
@@ -278,6 +402,19 @@ impl LibraryClient {
     /// # Errors
     ///
     /// Returns [`ClientError::Http`] on any transport or deserialization failure.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use dtrpg_sdk::{Config, DriveThruRpgSdk, AuthTokenResponse};
+    /// # async fn run() -> Result<(), dtrpg_sdk::ClientError> {
+    /// # let mut sdk = DriveThruRpgSdk::with_config(Config::new("app-key"));
+    /// # sdk.apply_auth_response(AuthTokenResponse::new("t", "r", 9_999_999_999)).unwrap();
+    /// let client = sdk.library_client().unwrap();
+    /// let product = client.get_order_product(515_276).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn get_order_product(
         &self,
         order_product_id: u64,
@@ -309,6 +446,19 @@ impl LibraryClient {
     /// # Errors
     ///
     /// Returns [`ClientError::Http`] on any transport or deserialization failure.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use dtrpg_sdk::{Config, DriveThruRpgSdk, AuthTokenResponse};
+    /// # async fn run() -> Result<(), dtrpg_sdk::ClientError> {
+    /// # let mut sdk = DriveThruRpgSdk::with_config(Config::new("app-key"));
+    /// # sdk.apply_auth_response(AuthTokenResponse::new("t", "r", 9_999_999_999)).unwrap();
+    /// let client = sdk.library_client().unwrap();
+    /// let download = client.prepare_download(515_276).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn prepare_download(
         &self,
         order_product_id: u64,
@@ -339,6 +489,19 @@ impl LibraryClient {
     /// # Errors
     ///
     /// Returns [`ClientError::Http`] on any transport or deserialization failure.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use dtrpg_sdk::{Config, DriveThruRpgSdk, AuthTokenResponse, PageParams};
+    /// # async fn run() -> Result<(), dtrpg_sdk::ClientError> {
+    /// # let mut sdk = DriveThruRpgSdk::with_config(Config::new("app-key"));
+    /// # sdk.apply_auth_response(AuthTokenResponse::new("t", "r", 9_999_999_999)).unwrap();
+    /// let client = sdk.library_client().unwrap();
+    /// let lists = client.list_product_lists(PageParams::default()).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn list_product_lists(
         &self,
         params: PageParams,
@@ -377,6 +540,19 @@ impl LibraryClient {
     /// # Errors
     ///
     /// Returns [`ClientError::Http`] on any transport or deserialization failure.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use dtrpg_sdk::{Config, DriveThruRpgSdk, AuthTokenResponse, PageParams};
+    /// # async fn run() -> Result<(), dtrpg_sdk::ClientError> {
+    /// # let mut sdk = DriveThruRpgSdk::with_config(Config::new("app-key"));
+    /// # sdk.apply_auth_response(AuthTokenResponse::new("t", "r", 9_999_999_999)).unwrap();
+    /// let client = sdk.library_client().unwrap();
+    /// let items = client.list_product_list_items(86_151, PageParams::default()).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn list_product_list_items(
         &self,
         product_list_id: u64,
@@ -414,7 +590,25 @@ impl LibraryClient {
     ///
     /// Returns [`ClientError::Http`] on transport failure or [`ClientError::DecodeFailed`]
     /// if the response cannot be deserialized.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use dtrpg_sdk::{Config, DriveThruRpgSdk, AuthTokenResponse};
+    /// # async fn run() -> Result<(), dtrpg_sdk::ClientError> {
+    /// # let mut sdk = DriveThruRpgSdk::with_config(Config::new("app-key"));
+    /// # sdk.apply_auth_response(AuthTokenResponse::new("t", "r", 9_999_999_999)).unwrap();
+    /// let client = sdk.library_client().unwrap();
+    /// let list = client.create_product_list("Wishlist").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn create_product_list(&self, name: &str) -> Result<ProductListItem, ClientError> {
+        #[derive(serde::Deserialize)]
+        struct ProductListEnvelope {
+            data: ProductListItem,
+        }
+
         let url = self.endpoint("product_lists");
 
         tracing::debug!(method = "POST", url = %url, "SDK request");
@@ -427,7 +621,8 @@ impl LibraryClient {
             .await?;
         tracing::debug!(url = %url, status = response.status().as_u16(), "SDK response");
 
-        self.decode_response(&url, response).await
+        let envelope: ProductListEnvelope = self.decode_response(&url, response).await?;
+        Ok(envelope.data)
     }
 
     /// Deletes a product list by id.
@@ -435,6 +630,19 @@ impl LibraryClient {
     /// # Errors
     ///
     /// Returns [`ClientError`] if the request fails.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use dtrpg_sdk::{Config, DriveThruRpgSdk, AuthTokenResponse};
+    /// # async fn run() -> Result<(), dtrpg_sdk::ClientError> {
+    /// # let mut sdk = DriveThruRpgSdk::with_config(Config::new("app-key"));
+    /// # sdk.apply_auth_response(AuthTokenResponse::new("t", "r", 9_999_999_999)).unwrap();
+    /// let client = sdk.library_client().unwrap();
+    /// client.delete_product_list(86_151).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn delete_product_list(&self, id: u64) -> Result<(), ClientError> {
         let url = self.endpoint(&format!("product_lists/{id}"));
 
@@ -461,6 +669,19 @@ impl LibraryClient {
     ///
     /// Returns [`ClientError::Http`] on transport failure or [`ClientError::DecodeFailed`]
     /// if the response cannot be deserialized.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use dtrpg_sdk::{Config, DriveThruRpgSdk, AuthTokenResponse};
+    /// # async fn run() -> Result<(), dtrpg_sdk::ClientError> {
+    /// # let mut sdk = DriveThruRpgSdk::with_config(Config::new("app-key"));
+    /// # sdk.apply_auth_response(AuthTokenResponse::new("t", "r", 9_999_999_999)).unwrap();
+    /// let client = sdk.library_client().unwrap();
+    /// let item = client.add_product_list_item(86_151, 515_276).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn add_product_list_item(
         &self,
         product_list_id: u64,
@@ -492,6 +713,19 @@ impl LibraryClient {
     /// # Errors
     ///
     /// Returns [`ClientError`] if the request fails.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use dtrpg_sdk::{Config, DriveThruRpgSdk, AuthTokenResponse};
+    /// # async fn run() -> Result<(), dtrpg_sdk::ClientError> {
+    /// # let mut sdk = DriveThruRpgSdk::with_config(Config::new("app-key"));
+    /// # sdk.apply_auth_response(AuthTokenResponse::new("t", "r", 9_999_999_999)).unwrap();
+    /// let client = sdk.library_client().unwrap();
+    /// client.delete_product_list_item(2_629_321).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn delete_product_list_item(
         &self,
         product_list_item_id: u64,
@@ -529,6 +763,41 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn create_product_list_decodes_json_api_envelope() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/vBeta/product_lists"))
+            .respond_with(ResponseTemplate::new(201).set_body_json(serde_json::json!({
+                "data": {
+                    "id": "/api/vBeta/product_lists/86267",
+                    "type": "ProductList",
+                    "attributes": {
+                        "customerId": 399_144,
+                        "name": "Testing",
+                        "dateCreated": "2026-07-09T00:42:39-05:00",
+                        "productListId": 86_267,
+                        "slug": "testing",
+                        "itemCount": 0,
+                    },
+                },
+            })))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = client_for(&server);
+        let result = client
+            .create_product_list("Testing")
+            .await
+            .expect("decode succeeds");
+
+        assert_eq!(result.id, "/api/vBeta/product_lists/86267");
+        assert_eq!(result.attributes.product_list_id, 86_267);
+        assert_eq!(result.attributes.name, "Testing");
+    }
+
+    #[tokio::test]
     async fn add_product_list_item_returns_created_item() {
         let server = MockServer::start().await;
 
@@ -539,9 +808,15 @@ mod tests {
                 "productListId": 86_151,
             })))
             .respond_with(ResponseTemplate::new(201).set_body_json(serde_json::json!({
-                "productId": 515_276,
-                "productListId": 86_151,
-                "productListItemId": 2_629_321,
+                "data": {
+                    "id": "/api/vBeta/product_list_items/2629321",
+                    "type": "ProductListItem",
+                    "attributes": {
+                        "productId": 515_276,
+                        "productListId": 86_151,
+                        "productListItemId": 2_629_321,
+                    },
+                },
             })))
             .expect(1)
             .mount(&server)
@@ -556,7 +831,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn add_product_list_item_returns_http_error_on_failure_status() {
+    async fn add_product_list_item_returns_api_error_on_failure_status() {
         let server = MockServer::start().await;
 
         Mock::given(method("POST"))
@@ -571,8 +846,110 @@ mod tests {
 
         assert!(matches!(
             result,
-            Err(ClientError::DecodeFailed { status: 404, .. })
+            Err(ClientError::ApiError { status: 404, .. })
         ));
+    }
+
+    #[tokio::test]
+    async fn add_product_list_item_surfaces_validation_message_on_conflict() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/vBeta/product_list_items"))
+            .respond_with(ResponseTemplate::new(409).set_body_json(serde_json::json!({
+                "error": {
+                    "id": "6a4ee5880bfda",
+                    "message": "productId: Requires a valid Product ID. Invalid value 22654728.",
+                    "code": 409,
+                    "status": 409,
+                },
+            })))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = client_for(&server);
+        let result = client.add_product_list_item(86_151, 22_654_728).await;
+
+        match result {
+            Err(ClientError::ApiError {
+                status, message, ..
+            }) => {
+                assert_eq!(status, 409);
+                assert_eq!(
+                    message.as_deref(),
+                    Some("productId: Requires a valid Product ID. Invalid value 22654728.")
+                );
+            }
+            other => panic!("expected ClientError::ApiError, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn add_product_list_item_surfaces_duplicate_membership_message_on_conflict() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/vBeta/product_list_items"))
+            .respond_with(ResponseTemplate::new(409).set_body_json(serde_json::json!({
+                "error": {
+                    "id": "6a4fc7a3b07db",
+                    "message": "This product already exists for this list.",
+                    "code": 409,
+                    "status": 409,
+                },
+            })))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = client_for(&server);
+        let result = client.add_product_list_item(86_151, 144_239).await;
+
+        match result {
+            Err(ClientError::ApiError {
+                status, message, ..
+            }) => {
+                assert_eq!(status, 409);
+                assert_eq!(
+                    message.as_deref(),
+                    Some("This product already exists for this list.")
+                );
+            }
+            other => panic!("expected ClientError::ApiError, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn add_product_list_item_decodes_json_api_envelope_on_success() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/vBeta/product_list_items"))
+            .respond_with(ResponseTemplate::new(201).set_body_json(serde_json::json!({
+                "data": {
+                    "id": "/api/vBeta/product_list_items/2634593",
+                    "type": "ProductListItem",
+                    "attributes": {
+                        "productId": 144_239,
+                        "productListId": 86_267,
+                        "productListItemId": 2_634_593,
+                    },
+                },
+            })))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = client_for(&server);
+        let result = client
+            .add_product_list_item(86_267, 144_239)
+            .await
+            .expect("decode succeeds");
+
+        assert_eq!(result.product_id, 144_239);
+        assert_eq!(result.product_list_id, 86_267);
+        assert_eq!(result.product_list_item_id, 2_634_593);
     }
 
     #[tokio::test]

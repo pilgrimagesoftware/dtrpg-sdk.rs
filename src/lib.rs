@@ -38,28 +38,24 @@
 //! ```
 
 pub mod auth;
-pub mod auth_client;
-pub mod client;
 pub mod config;
-pub mod credential_login;
 pub mod error;
 pub mod library;
 pub mod openapi;
 pub mod sdk;
 
 pub use auth::{AuthSession, AuthState, AuthTokenResponse, SessionTransition};
-pub use client::{ClientError, LibraryClient};
 pub use config::Config;
 pub use error::{AuthSessionError, SdkError};
 pub use library::{
-    FileChecksum, IncludedItem, LibraryItemsParams, OrderProductAttribute, OrderProductAttributes,
-    OrderProductDescription, OrderProductFile, OrderProductFilter, OrderProductHistoryEntry,
-    OrderProductInfo, OrderProductItem, OrderProductItemResponse, OrderProductListResponse,
-    OrderProductOrder, OrderProductPublisher, OrderProductRelationships, PageParams,
-    PaginationLinks, PaginationMeta, ProductListAttributes, ProductListCollectionResponse,
-    ProductListItem, ProductListItemCreateRequest, ProductListItemCreateResponse,
-    ProductListItemsResponse, PublisherAttributes, PublisherItem, RelationshipData,
-    RelationshipRef,
+    ClientError, FileChecksum, IncludedItem, LibraryClient, LibraryItemsParams,
+    OrderProductAttribute, OrderProductAttributes, OrderProductDescription, OrderProductFile,
+    OrderProductFilter, OrderProductHistoryEntry, OrderProductInfo, OrderProductItem,
+    OrderProductItemResponse, OrderProductListResponse, OrderProductOrder, OrderProductPublisher,
+    OrderProductRelationships, PageParams, PaginationLinks, PaginationMeta, ProductListAttributes,
+    ProductListCollectionResponse, ProductListItem, ProductListItemCreateRequest,
+    ProductListItemCreateResponse, ProductListItemsResponse, PublisherAttributes, PublisherItem,
+    RelationshipData, RelationshipRef,
 };
 pub use openapi::{OPERATIONS, OpenApiOperation};
 pub use sdk::DriveThruRpgSdk;

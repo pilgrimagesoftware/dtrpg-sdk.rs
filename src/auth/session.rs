@@ -138,6 +138,14 @@ impl AuthSession {
     ///
     /// The resulting transition has no replacement session (`next_session` is `None`) and
     /// carries the provided `error` describing why the session was invalidated.
+    ///
+    /// This is a lower-level primitive for code working with an owned [`AuthSession`]
+    /// directly. [`DriveThruRpgSdk::invalidate_session`] is the higher-level equivalent
+    /// for callers going through the SDK: it does not build a [`SessionTransition`], and
+    /// unconditionally clears the stored session rather than leaving room for a
+    /// `next_session` replacement.
+    ///
+    /// [`DriveThruRpgSdk::invalidate_session`]: crate::DriveThruRpgSdk::invalidate_session
     pub fn invalidate(self, error: AuthSessionError) -> SessionTransition {
         SessionTransition {
             next_session: None,
