@@ -1,4 +1,15 @@
 
+## 1.0.0 - 2026-07-10
+
+### Documentation
+- Propose prepare-download-file-index
+
+
+### Fixed
+- Require an index parameter for prepare_download **[BREAKING]**
+
+
+
 ## 0.1.3 - 2026-07-09
 
 ### Added
