@@ -1,10 +1,10 @@
 ## ADDED Requirements
 
-### Requirement: The Rust library client MUST decode the `data`-enveloped JSON:API response returned when creating a product list
-`POST /{api_version}/product_lists` returns the created resource wrapped in a JSON:API
-`data` envelope (`{"data": {"id": ..., "type": ..., "attributes": {...}}}`), not the
-resource object at the payload's top level. `create_product_list` MUST decode the envelope
-and return the unwrapped `ProductListItem` to callers.
+### Requirement: Product list creation decodes the JSON:API envelope
+`create_product_list` MUST decode the `data`-enveloped JSON:API response returned by
+`POST /{api_version}/product_lists` (`{"data": {"id": ..., "type": ..., "attributes": {...}}}`)
+and return the unwrapped `ProductListItem` to callers, rather than attempting to decode
+the resource object at the payload's top level.
 
 #### Scenario: Creating a product list decodes the enveloped response
 - **WHEN** a caller invokes `create_product_list` and the API responds with
