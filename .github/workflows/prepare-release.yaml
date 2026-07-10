@@ -109,13 +109,18 @@ jobs:
             PR_URL=$(gh pr view "$BRANCH" --json url --jq .url)
             gh pr edit "$BRANCH" --title "Release ${{ steps.version.outputs.version }}" --body "$BODY"
           else
+            # No --assignee here: GitHub App installation tokens cannot
+            # assign other bot/app identities ("Bot does not have access to
+            # the repository" / "Assigning agents is not supported with
+            # GitHub App installation tokens"). Assigning psw-ci previously
+            # failed this whole step after the PR was already created,
+            # skipping the "Add PR to project" step that follows it.
             PR_URL=$(gh pr create \
               --base master \
               --head "$BRANCH" \
               --title "Release ${{ steps.version.outputs.version }}" \
               --body "$BODY" \
               --label release \
-              --assignee psw-ci \
               --reviewer paulyhedral)
           fi
 
