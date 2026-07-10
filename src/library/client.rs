@@ -433,12 +433,16 @@ impl LibraryClient {
         self.decode_response(&url, response).await
     }
 
-    /// Prepares a download for the given ordered product and returns the raw API response.
+    /// Prepares a download for the given ordered product's file and returns the raw API
+    /// response.
     ///
-    /// Maps to `GET /{api_version}/order_products/{order_product_id}/prepare`.
+    /// Maps to `GET /{api_version}/order_products/{order_product_id}/prepare?index={index}`.
+    /// `index` identifies which file within the ordered product to prepare — it matches
+    /// [`OrderProductFile::index`](crate::library::OrderProductFile) — and is required: the
+    /// API rejects the request with an error if it is omitted.
     ///
-    /// The response is returned as a [`serde_json::Value`] because the schema for this
-    /// endpoint has not yet been formally defined by the API contract. The type will be
+    /// The response is returned as a [`serde_json::Value`] because the response schema for
+    /// this endpoint has not yet been formally defined by the API contract. The type will be
     /// tightened in a future change once the API contract matures.
     ///
     /// Authentication is supplied via the `Authorization` header containing the raw JWT token.
@@ -455,20 +459,22 @@ impl LibraryClient {
     /// # let mut sdk = DriveThruRpgSdk::with_config(Config::new("app-key"));
     /// # sdk.apply_auth_response(AuthTokenResponse::new("t", "r", 9_999_999_999)).unwrap();
     /// let client = sdk.library_client().unwrap();
-    /// let download = client.prepare_download(515_276).await?;
+    /// let download = client.prepare_download(515_276, 0).await?;
     /// # Ok(())
     /// # }
     /// ```
     pub async fn prepare_download(
         &self,
         order_product_id: u64,
+        index: u32,
     ) -> Result<serde_json::Value, ClientError> {
         let url = self.endpoint(&format!("order_products/{order_product_id}/prepare"));
 
-        tracing::debug!(method = "GET", url = %url, "SDK request");
+        tracing::debug!(method = "GET", url = %url, index, "SDK request");
         let response = self
             .http
             .get(&url)
+            .query(&[("index", index.to_string())])
             .header("Authorization", self.auth_header())
             .send()
             .await?;
