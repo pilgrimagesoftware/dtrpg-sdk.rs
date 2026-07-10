@@ -98,7 +98,14 @@ jobs:
           BRANCH="${{ steps.release_branch.outputs.branch }}"
           BODY="Automated release PR. Review the changelog and Cargo.toml version before merging."
 
-          if gh pr view "$BRANCH" --json url >/dev/null 2>&1; then
+          # `gh pr view` matches *any* PR ever associated with this branch
+          # name, including closed ones — and GitHub refuses to reopen a PR
+          # whose head branch was force-pushed/recreated after closing. Only
+          # reuse a match via `gh pr edit` if it's still open; otherwise fall
+          # through to `gh pr create`, which works fine even when a closed PR
+          # already exists for the same branch.
+          EXISTING_STATE=$(gh pr view "$BRANCH" --json state --jq .state 2>/dev/null || echo "NONE")
+          if [ "$EXISTING_STATE" = "OPEN" ]; then
             PR_URL=$(gh pr view "$BRANCH" --json url --jq .url)
             gh pr edit "$BRANCH" --title "Release ${{ steps.version.outputs.version }}" --body "$BODY"
           else
