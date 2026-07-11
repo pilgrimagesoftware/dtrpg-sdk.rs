@@ -450,6 +450,11 @@ pub struct OrderProductListResponse {
 pub struct OrderProductItemResponse {
     /// The ordered product item.
     pub data: OrderProductItem,
+    /// Publisher/Product/Order resources sideloaded alongside the ordered product,
+    /// resolved by matching `relationships.*.data.id` against each entry's `id`
+    /// (mirrors [`OrderProductListResponse::included`]).
+    #[serde(default)]
+    pub included: Option<Vec<IncludedItem>>,
 }
 
 // ── Product Lists ─────────────────────────────────────────────────────────────

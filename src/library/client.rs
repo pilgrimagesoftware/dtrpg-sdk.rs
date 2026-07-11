@@ -769,6 +769,66 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn get_order_product_decodes_sideloaded_included_array() {
+        // Matches the live API's actual shape: the single-item detail endpoint
+        // sideloads Publisher/Product/Order resources under a top-level
+        // `included` array, exactly like the list endpoint.
+        let server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/vBeta/order_products/22654728"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "data": {
+                    "id": "/api/vBeta/order_products/22654728",
+                    "type": "order_product",
+                    "attributes": {
+                        "orderId": 7_332_333,
+                        "productId": 144_239,
+                        "royaltyPublisherId": 117,
+                        "name": "Common Places - Free Map #1",
+                        "finalPrice": 0.0,
+                        "quantity": 1,
+                        "bundleId": 0,
+                        "archived": 0,
+                        "orderProductId": 22_654_728,
+                        "customerId": 399_144,
+                        "files": [],
+                    },
+                    "relationships": {
+                        "publisher": {
+                            "data": { "type": "Publisher", "id": "/api/vBeta/publishers/117" },
+                        },
+                    },
+                },
+                "included": [
+                    {
+                        "id": "/api/vBeta/publishers/117",
+                        "type": "Publisher",
+                        "attributes": {
+                            "name": "The Forge Studios",
+                            "publisherId": 117,
+                            "slug": "the-forge-studios",
+                        },
+                    },
+                ],
+            })))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = client_for(&server);
+        let result = client
+            .get_order_product(22_654_728)
+            .await
+            .expect("decode succeeds");
+
+        let included = result.included.expect("included array is present");
+        assert_eq!(included.len(), 1);
+        let publisher = included[0].as_publisher().expect("decodes as a publisher");
+        assert_eq!(publisher.name, "The Forge Studios");
+    }
+
+    #[tokio::test]
     async fn create_product_list_decodes_json_api_envelope() {
         let server = MockServer::start().await;
 
