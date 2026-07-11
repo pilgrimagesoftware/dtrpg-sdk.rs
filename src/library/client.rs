@@ -817,7 +817,10 @@ mod tests {
             .await;
 
         let client = client_for(&server);
-        let result = client.get_order_product(22_654_728).await.expect("decode succeeds");
+        let result = client
+            .get_order_product(22_654_728)
+            .await
+            .expect("decode succeeds");
 
         let included = result.included.expect("included array is present");
         assert_eq!(included.len(), 1);
