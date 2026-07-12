@@ -14,7 +14,26 @@ concurrency: ci
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    name: Validate on ${{ matrix.name }}
+
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            use-cross: true
+          - name: macOS (Intel)
+            os: macos-latest
+            target: x86_64-apple-darwin
+            use-cross: false
+          - name: macOS (Apple Silicon)
+            os: macos-latest
+            target: aarch64-apple-darwin
+            use-cross: false
 
     steps:
       - name: Checkout
