@@ -1,4 +1,10 @@
 
+## 1.1.0 - 2026-07-17
+
+### Added
+- Expose Retry-After header via ClientError::ApiError
+
+
 ## 1.0.1 - 2026-07-11
 
 ### Fixed

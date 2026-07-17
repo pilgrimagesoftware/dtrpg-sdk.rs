@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Generate token
         id: psw_ci_token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.PSW_CI_APP_ID }}
           private-key: ${{ secrets.PSW_CI_PRIVATE_KEY }}
@@ -62,10 +62,10 @@ jobs:
       # but silently dropped every real commit `develop` was ahead of `master`
       # by — the release PR looked "empty" of the actual changes being
       # released. Branching `release/<version>` directly off `develop`'s tip
-      # and committing the bump on top of it (below) preserves that full
-      # commit history, so the PR against `master` is a real, complete diff.
-      - name: Commit version bump and push release branch
-        id: release_branch
+      # (below) preserves that full commit history, so the PR against
+      # `master` is a real, complete diff.
+      - name: Push release branch
+        id: push_branch
         env:
           GH_TOKEN: ${{ steps.psw_ci_token.outputs.token }}
         run: |
@@ -75,9 +75,8 @@ jobs:
 
           BRANCH="release/${{ steps.version.outputs.version }}"
           git checkout -b "$BRANCH"
-          git add Cargo.toml Cargo.lock CHANGELOG.md
 
-          if git diff --cached --quiet; then
+          if git diff --quiet -- Cargo.toml Cargo.lock CHANGELOG.md; then
             echo "::error::Nothing to release at version ${{ steps.version.outputs.version }}."
             echo "::error::git-cliff computed this as the next version, but Cargo.toml and CHANGELOG.md already match what this run would have produced."
             echo "::error::Likely causes: (1) no new conventional commits (feat:/fix:/etc.) have landed on develop since the last release; or (2) no git tag exists yet for a prior release, so git-cliff cannot compute a version relative to history and keeps recomputing the same fallback version on every run (see 'Determine next version' step output above)."
@@ -85,8 +84,52 @@ jobs:
             exit 1
           fi
 
-          git commit -m "chore(release): ${{ steps.version.outputs.version }}"
-          git push --force origin "$BRANCH"
+          git push --force origin "HEAD:$BRANCH"
+
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "head_oid=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      # The branch requires all commits to be signed. A plain `git commit`
+      # from this job has no signing key attached and gets rejected, so the
+      # bump commit is created through the GraphQL API instead — commits
+      # made via `createCommitOnBranch` are authored by GitHub itself and
+      # come out marked "Verified" with no GPG key to manage.
+      - name: Commit version bump (signed via GitHub API)
+        id: release_branch
+        env:
+          GH_TOKEN: ${{ steps.psw_ci_token.outputs.token }}
+        run: |
+          BRANCH="${{ steps.push_branch.outputs.branch }}"
+          HEAD_OID="${{ steps.push_branch.outputs.head_oid }}"
+
+          ADDITIONS=$(jq -n \
+            --arg cargo_toml "$(base64 -w0 Cargo.toml)" \
+            --arg cargo_lock "$(base64 -w0 Cargo.lock)" \
+            --arg changelog "$(base64 -w0 CHANGELOG.md)" \
+            '[
+              {path: "Cargo.toml", contents: $cargo_toml},
+              {path: "Cargo.lock", contents: $cargo_lock},
+              {path: "CHANGELOG.md", contents: $changelog}
+            ]')
+
+          INPUT=$(jq -n \
+            --arg repo "pilgrimagesoftware/dtrpg-sdk.rs" \
+            --arg branch "$BRANCH" \
+            --arg headOid "$HEAD_OID" \
+            --arg message "chore(release): ${{ steps.version.outputs.version }}" \
+            --argjson additions "$ADDITIONS" \
+            '{
+              branch: {repositoryNameWithOwner: $repo, branchName: $branch},
+              message: {headline: $message},
+              expectedHeadOid: $headOid,
+              fileChanges: {additions: $additions}
+            }')
+
+          jq -n \
+            --arg query 'mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }' \
+            --argjson input "$INPUT" \
+            '{query: $query, variables: {input: $input}}' \
+            | gh api graphql --input -
 
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
 

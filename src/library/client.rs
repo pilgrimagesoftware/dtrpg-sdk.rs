@@ -87,6 +87,9 @@ pub enum ClientError {
         message: Option<String>,
         /// Raw response body, UTF-8 lossy, truncated to [`LOG_PAYLOAD_LIMIT`] chars.
         payload: String,
+        /// The delay specified by the response's `Retry-After` header, if present
+        /// and parseable as a delay-seconds value (RFC 9110 §10.2.3).
+        retry_after: Option<std::time::Duration>,
     },
 }
 
@@ -121,6 +124,7 @@ impl core::fmt::Display for ClientError {
                 status,
                 message,
                 payload,
+                ..
             } => {
                 let detail = message.as_deref().unwrap_or(payload.as_str());
                 write!(f, "API request failed [{url}] (HTTP {status}): {detail}")
@@ -273,6 +277,12 @@ impl LibraryClient {
     ) -> Result<T, ClientError> {
         let status = response.status();
         let status_code = status.as_u16();
+        let retry_after = response
+            .headers()
+            .get(reqwest::header::RETRY_AFTER)
+            .and_then(|value| value.to_str().ok())
+            .and_then(|value| value.trim().parse::<u64>().ok())
+            .map(std::time::Duration::from_secs);
         let bytes = response.bytes().await.map_err(ClientError::Http)?;
 
         let truncated_payload = || -> String {
@@ -299,6 +309,7 @@ impl LibraryClient {
                 status: status_code,
                 message,
                 payload,
+                retry_after,
             });
         }
 
@@ -914,6 +925,85 @@ mod tests {
             result,
             Err(ClientError::ApiError { status: 404, .. })
         ));
+    }
+
+    #[tokio::test]
+    async fn add_product_list_item_returns_no_retry_after_when_header_absent() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/vBeta/product_list_items"))
+            .respond_with(ResponseTemplate::new(404))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = client_for(&server);
+        let result = client.add_product_list_item(86_151, 515_276).await;
+
+        match result {
+            Err(ClientError::ApiError { retry_after, .. }) => {
+                assert_eq!(retry_after, None);
+            }
+            other => panic!("expected ClientError::ApiError, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn add_product_list_item_returns_retry_after_on_429() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/vBeta/product_list_items"))
+            .respond_with(ResponseTemplate::new(429).insert_header("Retry-After", "30"))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = client_for(&server);
+        let result = client.add_product_list_item(86_151, 515_276).await;
+
+        match result {
+            Err(ClientError::ApiError {
+                status,
+                retry_after,
+                ..
+            }) => {
+                assert_eq!(status, 429);
+                assert_eq!(retry_after, Some(std::time::Duration::from_secs(30)));
+            }
+            other => panic!("expected ClientError::ApiError, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn add_product_list_item_ignores_unparseable_retry_after() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/vBeta/product_list_items"))
+            .respond_with(
+                ResponseTemplate::new(429)
+                    .insert_header("Retry-After", "Wed, 21 Oct 2026 07:28:00 GMT"),
+            )
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = client_for(&server);
+        let result = client.add_product_list_item(86_151, 515_276).await;
+
+        match result {
+            Err(ClientError::ApiError {
+                status,
+                retry_after,
+                ..
+            }) => {
+                assert_eq!(status, 429);
+                assert_eq!(retry_after, None);
+            }
+            other => panic!("expected ClientError::ApiError, got {other:?}"),
+        }
     }
 
     #[tokio::test]
