@@ -1,4 +1,11 @@
 
+## 1.0.1 - 2026-07-11
+
+### Fixed
+- Decode the included sideload array on order product detail responses
+
+
+
 ## 1.0.0 - 2026-07-10
 
 ### Documentation
