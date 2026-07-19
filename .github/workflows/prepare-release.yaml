@@ -54,16 +54,6 @@ jobs:
         run: |
           git-cliff --tag v${{ steps.version.outputs.version }} --unreleased --prepend CHANGELOG.md
 
-      # `peter-evans/create-pull-request` (used here previously) cherry-picks
-      # only the *uncommitted working-tree diff* as a single synthetic commit
-      # onto `base`, rather than merging/rebasing the checked-out branch's
-      # actual history. Since this job checks out `develop`, that meant the
-      # release PR against `master` carried the version-bump/changelog commit
-      # but silently dropped every real commit `develop` was ahead of `master`
-      # by — the release PR looked "empty" of the actual changes being
-      # released. Branching `release/<version>` directly off `develop`'s tip
-      # (below) preserves that full commit history, so the PR against
-      # `master` is a real, complete diff.
       - name: Push release branch
         id: push_branch
         env:
@@ -89,11 +79,6 @@ jobs:
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
           echo "head_oid=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      # The branch requires all commits to be signed. A plain `git commit`
-      # from this job has no signing key attached and gets rejected, so the
-      # bump commit is created through the GraphQL API instead — commits
-      # made via `createCommitOnBranch` are authored by GitHub itself and
-      # come out marked "Verified" with no GPG key to manage.
       - name: Commit version bump (signed via GitHub API)
         id: release_branch
         env:
@@ -152,12 +137,6 @@ jobs:
             PR_URL=$(gh pr view "$BRANCH" --json url --jq .url)
             gh pr edit "$BRANCH" --title "Release ${{ steps.version.outputs.version }}" --body "$BODY"
           else
-            # No --assignee here: GitHub App installation tokens cannot
-            # assign other bot/app identities ("Bot does not have access to
-            # the repository" / "Assigning agents is not supported with
-            # GitHub App installation tokens"). Assigning psw-ci previously
-            # failed this whole step after the PR was already created,
-            # skipping the "Add PR to project" step that follows it.
             PR_URL=$(gh pr create \
               --base master \
               --head "$BRANCH" \

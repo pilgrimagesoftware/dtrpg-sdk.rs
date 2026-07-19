@@ -21,6 +21,7 @@ concurrency: release
 jobs:
   publish:
     runs-on: ubuntu-latest
+
     steps:
       - name: Resolve tag
         id: resolve_tag
