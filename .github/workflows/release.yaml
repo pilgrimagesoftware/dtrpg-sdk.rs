@@ -1,5 +1,8 @@
 name: Release
 
+permissions:
+  contents: read
+
 on:
   push:
     tags:
@@ -11,80 +14,9 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-
-concurrency: release
-
 jobs:
-  publish:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Resolve tag
-        id: resolve_tag
-        run: |
-          echo "tag=${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
-
-      - name: Checkout
-        id: checkout
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ steps.resolve_tag.outputs.tag }}
-          fetch-depth: 0 # full history required for git-cliff
-          fetch-tags: true
-          show-progress: true
-          submodules: recursive
-
-      - name: Install Rust
-        id: install_rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Setup Rust cache
-        id: rust_cache
-        uses: Swatinem/rust-cache@v2
-
-      - name: Install git-cliff
-        id: install_git_cliff
-        uses: taiki-e/install-action@git-cliff
-
-      - name: Test
-        id: test
-        run: |
-          cargo test --all-features
-
-      - name: Authenticate with crates.io
-        id: crates_io_auth
-        uses: rust-lang/crates-io-auth-action@v1
-
-      - name: Publish to crates.io
-        id: publish_crate
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ steps.crates_io_auth.outputs.token }}
-        run: |
-          cargo publish
-
-      - name: Generate changelog for this tag
-        id: changelog
-        run: |
-          git-cliff --current --strip header -o RELEASE_NOTES.md
-
-      - name: Create GitHub Release
-        id: github_release
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: ${{ steps.resolve_tag.outputs.tag }}
-          body_path: RELEASE_NOTES.md
-
-      - name: Update develop from master
-        id: update_develop
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git config --global user.email "ci@pilgrimagesoftware.com"
-          git config --global user.name "Pilgrimage Software CI"
-          git checkout develop
-          git merge origin/master
-          git push origin develop
+  release:
+    uses: pilgrimagesoftware/github-actions/.github/workflows/rust-release.yaml@master
+    with:
+      tag: ${{ inputs.tag }}
+    secrets: inherit
