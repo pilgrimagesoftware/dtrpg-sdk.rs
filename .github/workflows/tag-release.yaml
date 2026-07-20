@@ -6,6 +6,9 @@ on:
     branches:
       - master
 
+permissions:
+  contents: write
+
 jobs:
   tag-release:
     uses: pilgrimagesoftware/github-actions/.github/workflows/rust-tag-release.yaml@master
