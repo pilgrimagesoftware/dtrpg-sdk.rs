@@ -35,9 +35,8 @@ pub enum ClientError {
     Sdk(SdkError),
     /// An HTTP transport or server error occurred.
     ///
-    /// This wraps the underlying [`reqwest::Error`] including connection failures,
-    /// timeout errors, and non-success HTTP status codes when `.error_for_status()` is
-    /// used.
+    /// This wraps the underlying [`reqwest::Error`] for connection failures, timeout
+    /// errors, and body-read failures.
     Http(reqwest::Error),
     /// The provided email or password was rejected by DriveThruRPG.
     ///
@@ -192,6 +191,63 @@ fn extract_error_message(bytes: &[u8]) -> Option<String> {
     (!parts.is_empty()).then(|| parts.join("; "))
 }
 
+/// Extracts the `Retry-After` delay-seconds value from a response's headers.
+///
+/// Only the delay-seconds form (RFC 9110 §10.2.3) is recognized; an HTTP-date value
+/// or a malformed header yields `None`, matching the behaviour callers already rely
+/// on for [`ClientError::ApiError::retry_after`].
+///
+/// [`ClientError::ApiError::retry_after`]: ClientError::ApiError
+fn retry_after_from(response: &reqwest::Response) -> Option<std::time::Duration> {
+    response
+        .headers()
+        .get(reqwest::header::RETRY_AFTER)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.trim().parse::<u64>().ok())
+        .map(std::time::Duration::from_secs)
+}
+
+/// Renders a response body as a UTF-8 lossy string truncated to [`LOG_PAYLOAD_LIMIT`].
+fn truncated_payload(bytes: &[u8]) -> String {
+    let raw = String::from_utf8_lossy(bytes);
+    if raw.len() > LOG_PAYLOAD_LIMIT {
+        format!("{}… (truncated)", &raw[..LOG_PAYLOAD_LIMIT])
+    } else {
+        raw.into_owned()
+    }
+}
+
+/// Maps a non-success response body onto [`ClientError::ApiError`].
+///
+/// A human-readable message is extracted from the body — a top-level `message` field,
+/// a nested `{"error": {"message": "..."}}` object, or field-keyed validation errors —
+/// and the raw payload is logged at ERROR level (truncated to [`LOG_PAYLOAD_LIMIT`]
+/// bytes) before the error is returned. Used by both [`LibraryClient::decode_response`]
+/// and [`LibraryClient::decode_empty_response`] so their error mapping stays identical.
+fn api_error(
+    url: &str,
+    status_code: u16,
+    retry_after: Option<std::time::Duration>,
+    bytes: &[u8],
+) -> ClientError {
+    let payload = truncated_payload(bytes);
+    let message = extract_error_message(bytes);
+    tracing::error!(
+        url = %url,
+        status = status_code,
+        payload = %payload,
+        message = message.as_deref().unwrap_or(""),
+        "API request failed"
+    );
+    ClientError::ApiError {
+        url: url.to_string(),
+        status: status_code,
+        message,
+        payload,
+        retry_after,
+    }
+}
+
 // ── LibraryClient ─────────────────────────────────────────────────────────────
 
 /// An authenticated async HTTP client for DriveThruRPG library endpoints.
@@ -277,44 +333,15 @@ impl LibraryClient {
     ) -> Result<T, ClientError> {
         let status = response.status();
         let status_code = status.as_u16();
-        let retry_after = response
-            .headers()
-            .get(reqwest::header::RETRY_AFTER)
-            .and_then(|value| value.to_str().ok())
-            .and_then(|value| value.trim().parse::<u64>().ok())
-            .map(std::time::Duration::from_secs);
+        let retry_after = retry_after_from(&response);
         let bytes = response.bytes().await.map_err(ClientError::Http)?;
 
-        let truncated_payload = || -> String {
-            let raw = String::from_utf8_lossy(&bytes);
-            if raw.len() > LOG_PAYLOAD_LIMIT {
-                format!("{}… (truncated)", &raw[..LOG_PAYLOAD_LIMIT])
-            } else {
-                raw.into_owned()
-            }
-        };
-
         if !status.is_success() {
-            let payload = truncated_payload();
-            let message = extract_error_message(&bytes);
-            tracing::error!(
-                url = %url,
-                status = status_code,
-                payload = %payload,
-                message = message.as_deref().unwrap_or(""),
-                "API request failed"
-            );
-            return Err(ClientError::ApiError {
-                url: url.to_string(),
-                status: status_code,
-                message,
-                payload,
-                retry_after,
-            });
+            return Err(api_error(url, status_code, retry_after, &bytes));
         }
 
         serde_json::from_slice::<T>(&bytes).map_err(|cause| {
-            let payload = truncated_payload();
+            let payload = truncated_payload(&bytes);
             tracing::error!(
                 url = %url,
                 status = status_code,
@@ -329,6 +356,33 @@ impl LibraryClient {
                 payload,
             }
         })
+    }
+
+    /// Consumes a response whose success body is expected to be empty.
+    ///
+    /// Used by endpoints that do not return a payload — typically `DELETE` requests,
+    /// whose responses are empty or `204 No Content`. Unlike [`decode_response`], a
+    /// success status is never deserialized; the body is only read so that a non-success
+    /// status can be mapped through the same error logic, preserving the API's error
+    /// `message` and `Retry-After` metadata via [`ClientError::ApiError`].
+    ///
+    /// A non-success status produces [`ClientError::ApiError`] (identical mapping to
+    /// [`decode_response`]); a success status returns `Ok(())` regardless of body.
+    async fn decode_empty_response(
+        &self,
+        url: &str,
+        response: reqwest::Response,
+    ) -> Result<(), ClientError> {
+        let status = response.status();
+        let status_code = status.as_u16();
+        let retry_after = retry_after_from(&response);
+        let bytes = response.bytes().await.map_err(ClientError::Http)?;
+
+        if !status.is_success() {
+            return Err(api_error(url, status_code, retry_after, &bytes));
+        }
+
+        Ok(())
     }
 
     // ── Ordered Products ──────────────────────────────────────────────────────
@@ -644,9 +698,15 @@ impl LibraryClient {
 
     /// Deletes a product list by id.
     ///
+    /// Maps to `DELETE /{api_version}/product_lists/{id}`.
+    ///
+    /// The API responds with an empty body (typically `204 No Content`) on success.
+    ///
     /// # Errors
     ///
-    /// Returns [`ClientError`] if the request fails.
+    /// Returns [`ClientError::Http`] on transport failure, or
+    /// [`ClientError::ApiError`] when the API responds with a non-success status,
+    /// preserving the API's error `message` and `Retry-After` metadata.
     ///
     /// # Examples
     ///
@@ -672,10 +732,7 @@ impl LibraryClient {
             .await?;
         tracing::debug!(url = %url, status = response.status().as_u16(), "SDK response");
 
-        response
-            .error_for_status()
-            .map(|_| ())
-            .map_err(ClientError::Http)
+        self.decode_empty_response(&url, response).await
     }
 
     /// Adds a product to a product list as a member.
@@ -727,9 +784,13 @@ impl LibraryClient {
     ///
     /// Maps to `DELETE /{api_version}/product_list_items/{product_list_item_id}`.
     ///
+    /// The API responds with an empty body (typically `204 No Content`) on success.
+    ///
     /// # Errors
     ///
-    /// Returns [`ClientError`] if the request fails.
+    /// Returns [`ClientError::Http`] on transport failure, or
+    /// [`ClientError::ApiError`] when the API responds with a non-success status,
+    /// preserving the API's error `message` and `Retry-After` metadata.
     ///
     /// # Examples
     ///
@@ -758,10 +819,7 @@ impl LibraryClient {
             .await?;
         tracing::debug!(url = %url, status = response.status().as_u16(), "SDK response");
 
-        response
-            .error_for_status()
-            .map(|_| ())
-            .map_err(ClientError::Http)
+        self.decode_empty_response(&url, response).await
     }
 }
 
@@ -1109,6 +1167,111 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn delete_product_list_succeeds_on_empty_body() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("DELETE"))
+            .and(path("/vBeta/product_lists/86151"))
+            .respond_with(ResponseTemplate::new(200))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = client_for(&server);
+        let result = client.delete_product_list(86_151).await;
+
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn delete_product_list_succeeds_on_no_content() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("DELETE"))
+            .and(path("/vBeta/product_lists/86151"))
+            .respond_with(ResponseTemplate::new(204))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = client_for(&server);
+        let result = client.delete_product_list(86_151).await;
+
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn delete_product_list_preserves_api_error_message() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("DELETE"))
+            .and(path("/vBeta/product_lists/86151"))
+            .respond_with(ResponseTemplate::new(404).set_body_json(serde_json::json!({
+                "message": "Product list not found.",
+            })))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = client_for(&server);
+        let result = client.delete_product_list(86_151).await;
+
+        match result {
+            Err(ClientError::ApiError {
+                status, message, ..
+            }) => {
+                assert_eq!(status, 404);
+                assert_eq!(message.as_deref(), Some("Product list not found."));
+            }
+            other => panic!("expected ClientError::ApiError, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn delete_product_list_returns_retry_after_on_429() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("DELETE"))
+            .and(path("/vBeta/product_lists/86151"))
+            .respond_with(ResponseTemplate::new(429).insert_header("Retry-After", "30"))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = client_for(&server);
+        let result = client.delete_product_list(86_151).await;
+
+        match result {
+            Err(ClientError::ApiError {
+                status,
+                retry_after,
+                ..
+            }) => {
+                assert_eq!(status, 429);
+                assert_eq!(retry_after, Some(std::time::Duration::from_secs(30)));
+            }
+            other => panic!("expected ClientError::ApiError, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn delete_product_list_item_succeeds_on_empty_body() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("DELETE"))
+            .and(path("/vBeta/product_list_items/2629321"))
+            .respond_with(ResponseTemplate::new(200))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = client_for(&server);
+        let result = client.delete_product_list_item(2_629_321).await;
+
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
     async fn delete_product_list_item_succeeds_on_no_content() {
         let server = MockServer::start().await;
 
@@ -1126,12 +1289,14 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn delete_product_list_item_returns_http_error_on_failure_status() {
+    async fn delete_product_list_item_preserves_api_error_message() {
         let server = MockServer::start().await;
 
         Mock::given(method("DELETE"))
             .and(path("/vBeta/product_list_items/2629321"))
-            .respond_with(ResponseTemplate::new(404))
+            .respond_with(ResponseTemplate::new(404).set_body_json(serde_json::json!({
+                "message": "Product list item not found.",
+            })))
             .expect(1)
             .mount(&server)
             .await;
@@ -1139,6 +1304,41 @@ mod tests {
         let client = client_for(&server);
         let result = client.delete_product_list_item(2_629_321).await;
 
-        assert!(matches!(result, Err(ClientError::Http(_))));
+        match result {
+            Err(ClientError::ApiError {
+                status, message, ..
+            }) => {
+                assert_eq!(status, 404);
+                assert_eq!(message.as_deref(), Some("Product list item not found."));
+            }
+            other => panic!("expected ClientError::ApiError, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn delete_product_list_item_returns_retry_after_on_429() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("DELETE"))
+            .and(path("/vBeta/product_list_items/2629321"))
+            .respond_with(ResponseTemplate::new(429).insert_header("Retry-After", "30"))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let client = client_for(&server);
+        let result = client.delete_product_list_item(2_629_321).await;
+
+        match result {
+            Err(ClientError::ApiError {
+                status,
+                retry_after,
+                ..
+            }) => {
+                assert_eq!(status, 429);
+                assert_eq!(retry_after, Some(std::time::Duration::from_secs(30)));
+            }
+            other => panic!("expected ClientError::ApiError, got {other:?}"),
+        }
     }
 }
