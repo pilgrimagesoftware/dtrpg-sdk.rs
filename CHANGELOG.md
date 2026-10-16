@@ -1,4 +1,20 @@
 
+## 1.2.0 - 2026-10-16
+
+### Added
+- Add token refresh
+
+
+### Documentation
+- Add versioned Jekyll docs site, GitHub Pages workflow, and usage example
+
+
+### Fixed
+- Preserve API error details for DELETE responses
+- Pin ruby-version for docs-pages workflow
+
+
+
 ## 1.1.0 - 2026-07-17
 
 ### Added

@@ -1,0 +1,102 @@
+:root {
+  --accent: #b03028;
+  --accent-hover: #972a23;
+  --accent-active: #82241f;
+  --surface: #fcf9f3;
+  --sidebar: #f2ecdf;
+  --text: #26211a;
+  --muted: #5b5346;
+  --border: #e7dfcd;
+  --success: #22c55e;
+  --warning: #f97316;
+  --danger: #b03028;
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--text);
+  background: var(--surface);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; line-height: 1.6; }
+a { color: var(--accent-hover); }
+h1, h2, h3, h4, h5, h6, .brand, .sidebar, .version-picker, .appearance-picker {
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+code, pre {
+  font-family: Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+.skip-link { position: absolute; left: -9999px; }
+.skip-link:focus { left: 1rem; top: 1rem; z-index: 2; background: white; padding: .5rem; }
+
+.site-header {
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  min-height: 3.75rem;
+  padding: 0 1.5rem;
+}
+.brand {
+  align-items: center;
+  color: var(--text);
+  display: flex;
+  font-weight: 700;
+  gap: .55rem;
+  text-decoration: none;
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: 14rem minmax(0, 48rem);
+  min-height: calc(100vh - 3.75rem);
+}
+.sidebar {
+  background: var(--sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: .65rem;
+  padding: 1.5rem;
+}
+.sidebar a { color: var(--text); display: block; font-weight: 600; text-decoration: none; }
+main { padding: 3rem; }
+
+.version-picker, .appearance-picker {
+  color: var(--muted);
+  font-size: .85rem;
+  font-weight: 600;
+}
+select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: .35rem;
+  color: var(--text);
+  margin-left: .4rem;
+  padding: .35rem;
+}
+option { background: var(--surface); color: var(--text); }
+
+code { background: var(--sidebar); border-radius: .25rem; padding: .1rem .3rem; }
+
+html[data-theme="dark"] {
+  --surface: #1b1812;
+  --sidebar: #211d15;
+  --text: #ece4d3;
+  --muted: #b4aa94;
+  --border: #2c271e;
+  --accent: #e0845a;
+  --accent-hover: #e89572;
+  --danger: #e05858;
+}
+@media (prefers-color-scheme: dark) {
+  html[data-theme="system"] {
+    --surface: #1b1812;
+    --sidebar: #211d15;
+    --text: #ece4d3;
+    --muted: #b4aa94;
+    --border: #2c271e;
+    --accent: #e0845a;
+    --accent-hover: #e89572;
+    --danger: #e05858;
+  }
+}

@@ -5,9 +5,10 @@
 //! your application.
 
 use crate::{
-    auth::{AuthSession, AuthTokenResponse},
+    auth::{AuthSession, AuthTokenResponse, token_refresh},
     config::Config,
     error::{AuthSessionError, SdkError},
+    library::ClientError,
 };
 
 /// The DriveThruRPG SDK client.
@@ -109,6 +110,32 @@ impl DriveThruRpgSdk {
         self.require_session()
     }
 
+    /// Renews the access token using the active session's refresh token.
+    ///
+    /// On success the stored session is replaced with the one the API returns,
+    /// including its (possibly rotated) refresh token and expiry, and a reference to it
+    /// is returned. Any [`LibraryClient`] created earlier still holds the old access
+    /// token; call [`library_client`] again to get one with the new token.
+    ///
+    /// On failure the existing session is left in place, so the caller can decide
+    /// whether to retry, fall back to a fresh key exchange, or [`clear_session`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError::Sdk`] if the SDK is unconfigured or has no session.
+    /// Returns [`ClientError::Http`] on transport errors, and
+    /// [`ClientError::DecodeFailed`] if the API rejects the refresh token.
+    ///
+    /// [`LibraryClient`]: crate::LibraryClient
+    /// [`library_client`]: DriveThruRpgSdk::library_client
+    /// [`clear_session`]: DriveThruRpgSdk::clear_session
+    pub async fn refresh_session(&mut self) -> Result<&AuthSession, ClientError> {
+        let config = self.require_config()?;
+        let refresh_token = self.require_session()?.refresh_token();
+        let response = token_refresh::refresh(refresh_token, config).await?;
+        Ok(self.apply_auth_response(response)?)
+    }
+
     /// Removes the current authentication session without recording an error.
     ///
     /// Use this for voluntary log-out flows. For API-reported session failures,
@@ -142,5 +169,76 @@ impl DriveThruRpgSdk {
         let config = self.require_config()?.clone();
         let token = self.require_session()?.token().to_string();
         Ok(crate::library::LibraryClient::new(config, token))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use wiremock::matchers::{header, method};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    use super::*;
+
+    const REFRESHED_BODY: &str =
+        r#"{"token":"new-jwt","refreshToken":"new-refresh","refreshTokenTTL":2000000000}"#;
+
+    fn sdk_with_session(server: &MockServer) -> DriveThruRpgSdk {
+        let mut sdk = DriveThruRpgSdk::with_config(Config::with_base_url("app-key", server.uri()));
+        sdk.apply_auth_response(AuthTokenResponse::new(
+            "old-jwt",
+            "old-refresh",
+            1_000_000_000,
+        ))
+        .unwrap();
+        sdk
+    }
+
+    #[tokio::test]
+    async fn refresh_session_replaces_the_stored_session() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(header("cookie", "refreshToken=old-refresh"))
+            .respond_with(
+                ResponseTemplate::new(200).set_body_raw(REFRESHED_BODY, "application/json"),
+            )
+            .mount(&server)
+            .await;
+        let mut sdk = sdk_with_session(&server);
+
+        let session = sdk.refresh_session().await.unwrap();
+
+        assert_eq!(session.token(), "new-jwt");
+        assert_eq!(session.refresh_token(), "new-refresh");
+        assert_eq!(session.refresh_token_ttl(), 2_000_000_000);
+    }
+
+    #[tokio::test]
+    async fn refresh_session_keeps_the_old_session_when_rejected() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(
+                ResponseTemplate::new(401)
+                    .set_body_raw(r#"{"errorCode":"refresh_expired"}"#, "application/json"),
+            )
+            .mount(&server)
+            .await;
+        let mut sdk = sdk_with_session(&server);
+
+        let error = sdk.refresh_session().await.unwrap_err();
+
+        assert!(matches!(
+            error,
+            ClientError::DecodeFailed { status: 401, .. }
+        ));
+        assert_eq!(sdk.session().unwrap().token(), "old-jwt");
+    }
+
+    #[tokio::test]
+    async fn refresh_session_without_a_session_is_an_sdk_error() {
+        let mut sdk = DriveThruRpgSdk::with_config(Config::new("app-key"));
+
+        let error = sdk.refresh_session().await.unwrap_err();
+
+        assert!(matches!(error, ClientError::Sdk(SdkError::Unauthenticated)));
     }
 }
