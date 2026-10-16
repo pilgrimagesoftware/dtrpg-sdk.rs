@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if page.title %}{{ page.title }} - {% endif %}{{ site.title }}</title>
+    <link rel="stylesheet" href="{{ '/assets/css/site.css' | relative_url }}">
+    <script>document.documentElement.dataset.theme = localStorage.getItem("dtrpg-sdk-docs-theme") || "system";</script>
+  </head>
+  <body>
+    {% assign selected_version = page.version | default: site.data.versions.latest %}
+    {% assign version_path = '/latest/' %}
+    {% assign version_nav = nil %}
+    {% for version in site.data.versions.versions %}
+      {% if version.id == selected_version %}
+        {% assign version_path = version.path %}
+        {% assign version_nav = version.nav %}
+      {% endif %}
+    {% endfor %}
+    <a class="skip-link" href="#content">Skip to content</a>
+    <header class="site-header">
+      <a class="brand" href="{{ version_path | relative_url }}" aria-label="dtrpg-sdk documentation home">
+        <span>dtrpg-sdk</span>
+      </a>
+      <div>
+        {% include version-selector.html %}
+        <label class="appearance-picker" for="appearance-select">Appearance
+          <select id="appearance-select">
+            <option value="system">System</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
+      </div>
+    </header>
+    <div class="shell">
+      <nav class="sidebar" aria-label="Documentation">
+        {% for item in version_nav %}
+          {% assign item_url = version_path | append: item.path %}
+          <a href="{{ item_url | relative_url }}">{{ item.title }}</a>
+        {% endfor %}
+      </nav>
+      <main id="content">{{ content }}</main>
+    </div>
+  </body>
+  <script>
+    const appearance = document.getElementById("appearance-select");
+    appearance.value = document.documentElement.dataset.theme;
+    appearance.addEventListener("change", () => {
+      document.documentElement.dataset.theme = appearance.value;
+      localStorage.setItem("dtrpg-sdk-docs-theme", appearance.value);
+    });
+  </script>
+</html>

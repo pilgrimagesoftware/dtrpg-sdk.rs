@@ -1,0 +1,22 @@
+{% assign selected = page.version | default: site.data.versions.latest %}
+{% assign current_slug = page.slug | default: "index" %}
+<label class="version-picker" for="version-select">Version
+  <select id="version-select" onchange="window.location.href=this.value">
+    {% for version in site.data.versions.versions %}
+      {% assign target = version.path %}
+      {% if version.pages contains current_slug %}
+        {% unless current_slug == "index" %}
+          {% assign target = version.path | append: current_slug | append: "/" %}
+        {% endunless %}
+      {% endif %}
+      <option value="{{ target | relative_url }}" {% if version.id == selected %}selected{% endif %}>{{ version.label }}</option>
+    {% endfor %}
+  </select>
+</label>
+<noscript>
+  <nav class="version-links" aria-label="Documentation versions">
+    {% for version in site.data.versions.versions %}
+      <a href="{{ version.path | relative_url }}">{{ version.label }}</a>
+    {% endfor %}
+  </nav>
+</noscript>

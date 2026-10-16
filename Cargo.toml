@@ -27,6 +27,7 @@ exclude = [
     "API/.github/*",
     "openspec/*",
     "RELEASE.md",
+    "docs/site/*",
 ]
 build = "build.rs"
 

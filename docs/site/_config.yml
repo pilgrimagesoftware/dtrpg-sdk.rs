@@ -1,0 +1,16 @@
+title: dtrpg-sdk Documentation
+description: Documentation for dtrpg-sdk, the Rust SDK for the DriveThruRPG API.
+url: ""
+baseurl: ""
+markdown: kramdown
+permalink: pretty
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - AGENTS.md
+  - PUBLISHING.md
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default

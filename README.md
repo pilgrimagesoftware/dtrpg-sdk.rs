@@ -53,6 +53,17 @@ See the crate's [rustdoc](https://docs.rs/dtrpg-sdk) for the full API reference,
 `Config`, `AuthSession`/`AuthState`, `LibraryClient`, and the library model types
 (`OrderProductItem`, `ProductListItem`, etc.).
 
+## Documentation site
+
+Guides and usage walkthroughs are published at
+[pilgrimagesoftware.github.io/dtrpg-sdk.rs](https://pilgrimagesoftware.github.io/dtrpg-sdk.rs/)
+(source in `docs/site`). Runnable examples live in [`examples/`](examples):
+
+```bash
+DTRPG_APP_KEY=my-app-key DTRPG_JWT_TOKEN=jwt-token DTRPG_REFRESH_TOKEN=refresh-token \
+  cargo run --example list_library
+```
+
 ## Development
 
 ```bash
