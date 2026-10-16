@@ -4,10 +4,12 @@
 //! session/state types shared across the SDK. [`key_exchange`] exchanges an application key
 //! for a session token against `api.drivethrurpg.com`. [`credential_login`] exchanges an
 //! email/password pair for an application key against `www.drivethrurpg.com`, upstream of
-//! [`key_exchange::authenticate`].
+//! [`key_exchange::authenticate`]. [`token_refresh`] renews an access token from a refresh
+//! token without repeating that exchange.
 
 pub mod credential_login;
 pub mod key_exchange;
 mod session;
+pub mod token_refresh;
 
 pub use session::{AuthSession, AuthState, AuthTokenResponse, SessionTransition};

@@ -53,8 +53,21 @@ pub async fn authenticate(
     tracing::debug!(url = %url, status = status, "SDK response");
 
     let bytes = response.bytes().await.map_err(ClientError::Http)?;
-    serde_json::from_slice::<AuthTokenResponse>(&bytes).map_err(|cause| {
-        let raw = String::from_utf8_lossy(&bytes);
+    decode_token_response(&url, status, &bytes)
+}
+
+/// Decodes an auth endpoint's response body into an [`AuthTokenResponse`].
+///
+/// Shared by every endpoint that returns the token payload. A body that does not
+/// decode (including an error body) becomes [`ClientError::DecodeFailed`], carrying the
+/// HTTP `status` and a truncated copy of the payload for diagnosis.
+pub(super) fn decode_token_response(
+    url: &str,
+    status: u16,
+    bytes: &[u8],
+) -> Result<AuthTokenResponse, ClientError> {
+    serde_json::from_slice::<AuthTokenResponse>(bytes).map_err(|cause| {
+        let raw = String::from_utf8_lossy(bytes);
         let payload: String = if raw.len() > LOG_PAYLOAD_LIMIT {
             format!("{}… (truncated)", &raw[..LOG_PAYLOAD_LIMIT])
         } else {
@@ -65,10 +78,10 @@ pub async fn authenticate(
             status = status,
             payload = %payload,
             error = %cause,
-            "auth_key response decode failed"
+            "auth response decode failed"
         );
         ClientError::DecodeFailed {
-            url: url.clone(),
+            url: url.to_string(),
             status,
             cause,
             payload,

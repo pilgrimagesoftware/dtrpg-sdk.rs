@@ -45,3 +45,28 @@ let error = AuthSessionError::new(
 );
 sdk.invalidate_session(error).unwrap();
 ```
+
+## Refreshing a session
+
+An access token is short-lived. To renew it without repeating the application-key
+exchange, call `refresh_session`. It sends the session's refresh token to the API and
+replaces the stored session with the response, including the new refresh token and expiry.
+
+```rust,no_run
+# use dtrpg_sdk::{AuthTokenResponse, Config, DriveThruRpgSdk};
+# async fn run() -> Result<(), dtrpg_sdk::ClientError> {
+# let mut sdk = DriveThruRpgSdk::with_config(Config::new("my-app-key"));
+# sdk.apply_auth_response(AuthTokenResponse::new("jwt-token", "refresh-token", 1_800_000_000)).unwrap();
+sdk.refresh_session().await?;
+
+// Clients created before the refresh still hold the old token.
+let client = sdk.library_client().unwrap();
+# Ok(())
+# }
+```
+
+If the refresh token is rejected, the existing session is left in place. Fall back to
+`key_exchange::authenticate` with the application key.
+
+The refresh call is also available without a `DriveThruRpgSdk` as
+`auth::token_refresh::refresh`.
