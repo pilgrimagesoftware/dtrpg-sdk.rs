@@ -10,7 +10,7 @@ A Rust SDK for the [DriveThruRPG API](https://api.drivethrurpg.com). It covers a
 configuration, authentication/session lifecycle, and an async library client for listing
 orders, product lists, and preparing downloads.
 
-MSRV: 1.95.0 (see `rust-toolchain.toml` in the repository).
+MSRV: 1.99.0 (see `rust-toolchain.toml` in the repository).
 
 - [Installation](../installation/)
 - [Authentication](../authentication/)
